@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "spex"
+version = "0.1.0"
+description = "a clean-slate rewrite of torch-spex"
+authors = ["Marcel Langer <dev@marcel.science>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.7"
+specable = ">=0.1.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
