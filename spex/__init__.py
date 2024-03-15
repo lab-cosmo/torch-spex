@@ -4,10 +4,9 @@ specable = Interface("spex", "modules")
 
 from_dict = specable.from_dict
 
-from .engine import Specable
 from .angular import SphericalHarmonics
 from .radial import LaplacianEigenstates
-from .species import Orthogonal, Alchemical
+from .species import Alchemical, Orthogonal
 from .spherical_expansion import SphericalExpansion
 
 modules = [

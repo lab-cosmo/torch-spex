@@ -14,3 +14,31 @@ specable = ">=0.1.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # isort
+    "I",
+]
+
+# E741: don't worry about short variable names
+# E731: don't worry about lambdas
+ignore = ["E741", "E731"]
+
+[tool.ruff.lint.isort]
+section-order = ["numpy", "torch", "future", "standard-library", "third-party", "first-party", "local-folder"]
+no-lines-before = ["torch"]
+
+[tool.ruff.lint.isort.sections]
+"numpy" = ["numpy"]
+"torch" = ["torch"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+# don't worry about unused imports in __init__.py
+"__init__.py" = ["E402"]

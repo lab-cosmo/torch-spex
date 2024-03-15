@@ -1,5 +1,5 @@
 import numpy as np
-
+import torch
 from torch.nn import Module
 
 from spex import from_dict

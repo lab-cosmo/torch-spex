@@ -1,16 +1,15 @@
 import numpy as np
-import scipy as sp
 import torch
-
-from scipy.special import jv
-from scipy.special import spherical_jn as j_l
 
 from functools import cache
 
+import scipy as sp
+from scipy.special import spherical_jn as j_l
+
 from spex.engine import Specable
 
-from .spliner import DynamicSpliner
 from .cutoff import get_cutoff_function
+from .spliner import DynamicSpliner
 
 
 class LaplacianEigenstates(torch.nn.Module, Specable):
@@ -200,7 +199,6 @@ def trim_basis(max_eigenvalue, eigenvalues_ln):
         if n_per_l[-1] == 0:
             # all eigenvalues for this l are over the threshold
             n_per_l.pop()
-            max_angular = ell - 1
             break
 
     return n_per_l

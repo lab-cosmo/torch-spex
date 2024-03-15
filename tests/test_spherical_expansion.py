@@ -1,6 +1,6 @@
-from unittest import TestCase
 import torch
-import numpy as np
+
+from unittest import TestCase
 
 
 class TestSphericalExpansion(TestCase):
@@ -9,7 +9,7 @@ class TestSphericalExpansion(TestCase):
         from spex.spherical_expansion import SphericalExpansion
 
         exp = SphericalExpansion()
-        exp2 = from_dict(exp.to_dict())
+        from_dict(exp.to_dict())
 
     def test_is_on_fire(self):
         from spex.spherical_expansion import SphericalExpansion

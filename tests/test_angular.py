@@ -1,8 +1,9 @@
-from unittest import TestCase
-import math
-
 import numpy as np
 import torch
+
+import math
+from unittest import TestCase
+
 from scipy.special import sph_harm
 
 

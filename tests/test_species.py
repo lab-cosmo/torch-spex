@@ -1,6 +1,7 @@
-from unittest import TestCase
-import torch
 import numpy as np
+import torch
+
+from unittest import TestCase
 
 
 class TestOrthogonal(TestCase):
