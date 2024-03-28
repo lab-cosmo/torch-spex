@@ -22,12 +22,8 @@ class TestSphericalHarmonics(TestCase):
                 np.array([0.0, 0.0, 1.0]),
                 np.array([0.5773502691896258, 0.5773502691896258, 0.5773502691896258]),
                 np.array([0.455493902781557, 0.46164788218724867, -0.7611875835829522]),
-                np.array(
-                    [-0.28695413002732584, -0.33058712239743676, -0.8990937002144119]
-                ),
-                np.array(
-                    [0.35108584385989333, -0.9226014654045358, -0.15982886558625636]
-                ),
+                np.array([-0.28695413002732584, -0.33058712239743676, -0.8990937002144119]),
+                np.array([0.35108584385989333, -0.9226014654045358, -0.15982886558625636]),
             ]
         )
 
@@ -40,6 +36,13 @@ class TestSphericalHarmonics(TestCase):
         reference = spherical_harmonics(self.max_angular, self.directions)
 
         np.testing.assert_allclose(reference, ours, atol=1e-13)
+
+    def test_jit(self):
+        from spex.angular import SphericalHarmonics
+
+        sph = SphericalHarmonics(max_angular=self.max_angular)
+        sph = torch.jit.script(sph)
+        sph(torch.tensor(self.directions))
 
 
 def real_sph(l, m, theta, phi):

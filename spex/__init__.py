@@ -4,6 +4,7 @@ specable = Interface("spex", "modules")
 
 from_dict = specable.from_dict
 
+# unusual order is to avoid problems if modules require from_dict
 from .angular import SphericalHarmonics
 from .radial import LaplacianEigenstates
 from .species import Alchemical, Orthogonal
@@ -16,3 +17,5 @@ modules = [
     Alchemical,
     SphericalExpansion,
 ]
+
+__all__ = modules + [from_dict]

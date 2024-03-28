@@ -15,6 +15,9 @@ specable = ">=0.1.1"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.ruff]
+line-length = 92
+
 [tool.ruff.lint]
 select = [
     # pycodestyle
@@ -40,5 +43,5 @@ no-lines-before = ["torch"]
 "torch" = ["torch"]
 
 [tool.ruff.lint.extend-per-file-ignores]
-# don't worry about unused imports in __init__.py
+# E402: don't worry about the order of imports
 "__init__.py" = ["E402"]

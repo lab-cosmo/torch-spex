@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 from torch.nn import Module
 
@@ -35,18 +34,14 @@ class SphericalExpansion(Module, Specable):
         # i: [pair]
         # Z_j: [pair]
 
-        # pair expansion
-
         r_ij = (R_ij**2).sum(dim=-1)
 
+        # pairwise expansions
         radial_ij = self.radial(r_ij)  # -> [pair, l_and_n]
         angular_ij = self.angular(R_ij)  # -> [pair, l_and_m]
         species_ij = self.species(Z_j)  # -> [pair, species]
 
-        print(radial_ij.shape)
-        print(np.sum(self.radial.n_per_l))
-        print(self.radial.n_per_l)
-
+        # ... reshape into tuples per l
         radial_ij = radial_ij.split(
             self.radial.n_per_l, dim=-1
         )  # -> ([l=0 n...], [l=1 n...])
@@ -54,6 +49,7 @@ class SphericalExpansion(Module, Specable):
             self.angular.m_per_l, dim=-1
         )  # -> ([l=0 m...], [l=1 m...])
 
+        # ... outer products
         radial_and_angular_ij = (
             s.unsqueeze(-1) * r.unsqueeze(-2) for r, s in zip(radial_ij, angular_ij)
         )  # -> ([l=0 m,n], [l=1 m,n])
@@ -63,10 +59,12 @@ class SphericalExpansion(Module, Specable):
             for ra, c in zip(radial_and_angular_ij, species_ij)
         )  # -> ([l=0 m,n,c], [l=1 m,n,c]) ...
 
-        # aggregation
-
+        # aggregation over pairs
+        #  note: scatter_add wouldn't work in torchscript because it
+        #  expects the index and source arrays to have the same shape,
+        #  while index_add broadcasts across all the non-indexed dims
         full_expansion = (
-            (torch.zeros_like(e)).scatter_add_(0, i, e) for e in full_expansion_ij
+            (torch.zeros_like(e)).index_add_(0, i, e) for e in full_expansion_ij
         )
 
         return full_expansion
