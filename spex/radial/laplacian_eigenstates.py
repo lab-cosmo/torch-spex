@@ -69,9 +69,7 @@ class LaplacianEigenstates(torch.nn.Module, Specable):
             "normalize": normalize,
         }
 
-        # we only store this *if* if was passed -- we try to
-        # preserve the original hypers as well as we can
-        # (this may change if we decide to skip "costly" init like this)
+        # try to preserve original hypers as well as we can
         if n_per_l:
             self.spec["n_per_l"] = n_per_l
 
@@ -96,15 +94,15 @@ class LaplacianEigenstates(torch.nn.Module, Specable):
         # r: [pair]
         cutoff = self.cutoff_fn(r)  # -> [pair]
         basis = self.spliner(r)  # -> [pair, (l=0 n=0) (l=0 n=1) ... (l=1 n=0) ...]
-        return (
-            cutoff.unsqueeze(1) * basis
-        )  # -> [pair, (l=0 n=0) (l=0 n=1) ... (l=1 n=0) ...]
+        return cutoff.unsqueeze(1) * basis  # -> [pair, (l=0 n=0) (l=0 n=1) ...]
 
 
 def get_spliner_inputs(cutoff, n_per_l, normalize=False):
+    # make functions that accept a batch of distances and return all basis
+    # function values (and their derivatives) at once
+
     R, dR = get_basis_functions(cutoff, n_per_l, normalize=normalize)
 
-    # some silly stuff to get everything into tensors
     def values_fn(xs):
         values = []
         for l, number_of_n in enumerate(n_per_l):
@@ -135,15 +133,15 @@ def get_basis_size(
     n_per_l=None,
     trim=False,
 ):
-    # figures out the basis size given the many possible combination of hypers
-    # basically: (a) we just make a rectangular basis or
+    # figures out the basis size given the possible combination of hypers
+    # basically: (a) we just make a rectangular basis (trime=False) or
     #            (b) we trim based on eigenvalues (which in turn can be set by choosing
     #                a maximum basis size)
-    #            (c) we get a premade basis, in which case we don't do anything.
-    # We return: n_per_l [number of n for l=0, number of n for l=1, ...]
+    #            (c) we get a premade basis size, in which case we don't do anything.
+    # We return: n_per_l = [number of n for l=0, number of n for l=1, ...]
 
     if n_per_l is not None:
-        # work was already done by someone else, great!
+        # work was already done
         return n_per_l
 
     if not trim:
@@ -153,7 +151,7 @@ def get_basis_size(
 
         return [max_radial + 1] * (max_angular + 1)
 
-    # we need to deal with eigenvalues, so let's compute them up to some sane maximum
+    # we'll be trimming by eigenvalue, so we calculate all eigenvalues up to some maximum
     max_l = 100
     max_n = 100
 
@@ -163,20 +161,28 @@ def get_basis_size(
     if max_eigenvalue is None:
         if max_angular is None:
             assert max_radial is not None
+            assert max_radial <= max_n
+
             # we go with the max_eigenvalue that leads to max_radial+1 functions at l=0
             max_eigenvalue = eigenvalues_ln[0, max_radial]
             return trim_basis(max_eigenvalue, eigenvalues_ln)
 
         elif max_radial is None:
             assert max_angular is not None
+            assert max_angular <= max_l
+
             # we go with the max_eigenvalue such that there is at least one radial
             # basis function at l=max_angular
             max_eigenvalue = eigenvalues_ln[max_angular, 0]
             return trim_basis(max_eigenvalue, eigenvalues_ln)
 
         else:
+            assert max_radial <= max_n
+            assert max_angular <= max_l
+
             # we first make sure that the max_radial at l=0 is within bounds,
             max_eigenvalue = eigenvalues_ln[0, max_radial]
+
             # ... then we restrict further
             n_per_l = trim_basis(max_eigenvalue, eigenvalues_ln)
             return n_per_l[:max_angular]
@@ -184,6 +190,7 @@ def get_basis_size(
     else:
         assert max_radial is None
         assert max_angular is None
+        assert max_eigenvalue <= eigenvalues_ln.max()
 
         return trim_basis(max_eigenvalue, eigenvalues_ln)
 
@@ -204,7 +211,7 @@ def trim_basis(max_eigenvalue, eigenvalues_ln):
     return n_per_l
 
 
-# -- actual basis --
+# -- actual basis functions --
 
 
 def get_basis_functions(

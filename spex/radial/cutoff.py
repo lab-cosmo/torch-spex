@@ -28,9 +28,9 @@ def shifted_cosine(cutoff, width=0.5):
         cosine = 0.5 * (1.0 + torch.cos(np.pi * (r - onset) / width))
 
         left_of_onset = torch.where(r < onset, ones, cosine)
-        right_of_cutoff = torch.where(r < cutoff, ones, zeros)
+        left_of_cutoff = torch.where(r < cutoff, ones, zeros)
 
-        return left_of_onset * right_of_cutoff
+        return left_of_onset * left_of_cutoff
 
     return fn
 

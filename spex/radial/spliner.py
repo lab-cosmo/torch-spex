@@ -46,7 +46,7 @@ class DynamicSpliner(Module):
         super().__init__()
 
         start = 0.0
-        n = 6  # divide [0, cutoff] into n-1 intervals with n boundaries
+        n = 3  # divide [0, cutoff] into n-1 intervals with n boundaries
         MAE = float("inf")
 
         # Now we bisect each interpolation interval until we reach target accuracy,
