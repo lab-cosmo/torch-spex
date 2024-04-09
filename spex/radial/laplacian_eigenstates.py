@@ -20,7 +20,7 @@ class LaplacianEigenstates(torch.nn.Module, Specable):
     arise as solutions (eigenstates) of the Schrödinger equation with ``H = -∇**2``,
     subject to vanishing boundary conditions at ``|x| = cutoff``.
 
-    This basis defines radial basis functions that depend on the angular channel ``l``,
+    This defines radial basis functions that depend on the angular channel ``l``,
     and there is a "basis trimming" feature that reduces the number of basis functions
     for high ``l`` (based on the associated eigenvalue). This is exposed in the hyper-
     parameter selection as ``trim=True``, which then tries to respect ``max_radial``
@@ -41,6 +41,9 @@ class LaplacianEigenstates(torch.nn.Module, Specable):
     ``n_per_l`` attribute of instances of this class provides the sizes required for
     ``torch.split`` to obtain features per ``l``.
 
+    Attributes:
+        n_per_l (list): Number of basis functions for each angular channel ``l``.
+
     """
 
     def __init__(
@@ -55,6 +58,35 @@ class LaplacianEigenstates(torch.nn.Module, Specable):
         cutoff_function="shifted_cosine",
         normalize=True,
     ):
+        """Initialise the Laplacian Eigenstate basis.
+
+        If ``trim=False``, nothing complicated happens and there is a constant number of
+        basis functions for each ``l``. The basis is therefore "rectangular" in shape:
+        For each of the ``max_angular + 1`` choices of  ``l`` there are ``max_radial + 1``
+        basis functions.
+
+        If ``trim=True``, the basis is trimmed to become smaller with increasing ``l``,
+        based on the associated eigenvalues. We do our best to respect ``max_radial``,
+        ``max_angular``, and ``max_eigenvalue`` choices (see ``get_basis_size``).
+
+        If ``n_per_l`` is provided, everything else is ignored and this is used to define
+        the basis size.
+
+        Args:
+            cutoff (float): Cutoff radius.
+            max_radial (int, optional): Number of radial basis functions.
+            max_angular (int, optional): Number of angular channels to consider.
+            max_eigenvalue (float, optional): Maximum eigenvalue to be used for trimming.
+            n_per_l (list, optional): Number of basis functions for each angular channel.
+                (Overrides other options for basis selection.)
+            trim (bool, optional): Whether to trim the basis.
+            spliner_accuracy (float, optional): The accuracy of the spliner.
+            cutoff_function (str, optional): The cutoff function to use, either
+                ``shifted_cosine`` or ``step``.
+            normalize (bool, optional): Whether to normalize the basis functions,
+                measured by squared integral over the interval ``[0, cutoff]``.
+
+        """
         super().__init__()
 
         # spec
@@ -91,6 +123,14 @@ class LaplacianEigenstates(torch.nn.Module, Specable):
         self.cutoff_fn = get_cutoff_function(cutoff, cutoff_function)
 
     def forward(self, r):
+        """Compute the radial expansion.
+
+        Args:
+            r (Tensor): Input distances of shape ``[pair]``.
+
+        Returns:
+            Expansion of shape ``[pair, sum([n for n in n_per_l])]``.
+        """
         # r: [pair]
         cutoff = self.cutoff_fn(r)  # -> [pair]
         basis = self.spliner(r)  # -> [pair, (l=0 n=0) (l=0 n=1) ... (l=1 n=0) ...]
@@ -101,6 +141,7 @@ class LaplacianEigenstates(torch.nn.Module, Specable):
 def get_spliner_inputs(cutoff, n_per_l, normalize=False):
     # make functions that accept a batch of distances and return all basis
     # function values (and their derivatives) at once
+    # (used only to construct the splines, not for forward pass)
 
     R, dR = get_basis_functions(cutoff, n_per_l, normalize=normalize)
 
@@ -260,7 +301,8 @@ def get_basis_functions(
 def compute_zeros(max_angular: int, max_radial: int) -> np.ndarray:
     # taken directly from rascaline, who took it from
     # https://scipy-cookbook.readthedocs.io/items/SphericalBesselZeros.html
-    # here we "correct" the max_radial/max_angular discrepancy
+    # here we "correct" the max_radial/max_angular discrepancy and
+    # treat both as inclusive rather than exclusive
 
     def Jn(r: float, n: int) -> float:
         return np.sqrt(np.pi / (2 * r)) * sp.special.jv(n + 0.5, r)

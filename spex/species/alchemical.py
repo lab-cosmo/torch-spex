@@ -12,9 +12,21 @@ class Alchemical(Module, Specable):
     "compress" elements into a smaller space of dimension ``pseudo_species``,
     rather than having to deal with the large space of all possible ones.
 
+    Attributes:
+        species (Tensor): Pseudo species used here, just counting from 0.
+            (Can be used to map indices back psuedo species names.)
+
     """
 
     def __init__(self, pseudo_species=4, total_species=100):
+        """Initialise Alchemical species embedding.
+
+        Args:
+            pseudo_species (int): Number of pseudo species.
+            total_species (int, optional): Total number of species to consider, i.e.,
+                the size of the embedding dict. Usually no need to change this.
+
+        """
         super().__init__()
 
         self.spec = {
@@ -32,6 +44,15 @@ class Alchemical(Module, Specable):
         )
 
     def forward(self, species):
+        """Embed atomic species.
+
+        Args:
+            species (Tensor): Atomic species (ints) of shape ``[pair]``.
+
+        Returns:
+            Embeddings, a Tensor of shape ``[pair, pseudo_species]``.
+
+        """
         # species: [pair]
 
         return self.embedding(species)  # -> [pair, pseudo_species]

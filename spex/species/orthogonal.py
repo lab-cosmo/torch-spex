@@ -12,6 +12,10 @@ class Orthogonal(Module, Specable):
     are shared between elements, and the size of the embedding grows linearly
     with the number of different species to be considered.
 
+    Attributes:
+        species (Tensor): The species we are embedding here, mapping index to species.
+        species_to_index (Tensor): The inverse of ``species``, mapping species to index.
+
     """
 
     def __init__(self, species):
@@ -19,7 +23,7 @@ class Orthogonal(Module, Specable):
 
         self.spec = {"species": species}
 
-        species = torch.tensor(species, dtype=torch.int64)
+        species = torch.tensor(species, dtype=torch.int)
         species = torch.unique(species, sorted=True)
         self.n_species = len(species)
 
@@ -36,7 +40,16 @@ class Orthogonal(Module, Specable):
         self.register_buffer("species", species, persistent=False)
 
     def forward(self, species):
+        """Embed atomic species.
+
+        Args:
+            species (Tensor): Atomic species (ints) of shape ``[pair]``.
+
+        Returns:
+            Embeddings, a Tensor of shape ``[pair, n_species]``.
+
+        """
         # species: [pair]
 
         idx = torch.index_select(self.species_to_index, 0, species)
-        return one_hot(idx, self.n_species)  # -> [pair, species]
+        return one_hot(idx, self.n_species)  # -> [pair, n_species]

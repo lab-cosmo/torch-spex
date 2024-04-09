@@ -10,27 +10,32 @@ from spex.engine import Specable
 
 
 class SphericalExpansion(Module, Specable):
-    """SphericalExpansion with metatensor output.
+    """SphericalExpansion, but with metatensor output.
 
     Wrapper for ``spex.SphericalExpansion`` that returns a ``TensorMap``.
-
-    Args:
-        radial (dict): Parameters for the radial expansion.
-        angular (str): Type of angular expansion.
-            (Currently only ``"SphericalHarmonics"`` is supported.)
-        species (dict): Parameters for the chemical embedding.
-
-    Attributes:
-        species (Tensor): The atomic species considered in the output.
 
     """
 
     def __init__(
         self,
-        radial={"LaplacianEigenstates": {"cutoff": 5.0, "max_radial": 20}},
+        radial={
+            "LaplacianEigenstates": {"cutoff": 5.0, "max_radial": 20, "max_angular": 4}
+        },
         angular="SphericalHarmonics",
         species={"Alchemical": {"pseudo_species": 4}},
     ):
+        """Initialise SphericalExpansion.
+
+        Arguments are expected in the form of ``specable``-style dictionaries, i.e.,
+        ``{ClassName: {key1: value1, key2: value2, ...}}``.
+
+        Args:
+            radial (dict): Radial expansion specification.
+            angular (str): Type of angular expansion.
+                (Currently only "SphericalHarmonics" is supported.)
+            species (dict): Species embedding specification.
+
+        """
         super().__init__()
 
         self.calculator = torchSphericalExpansion(
@@ -40,16 +45,66 @@ class SphericalExpansion(Module, Specable):
         self.species = self.calculator.species.species
 
     def forward(self, R_ij, i, j, species, structures, centers):
+        """Compute spherical expansion.
+
+        Since we don't want to be in charge of computing displacements, we take an already-
+        computed graph of ``R_ij``, ``i``, and ``j``, as well as center atom ``species``.
+        From this perspective, a batch is just a very big graph with many disconnected
+        subgraphs, the spherical expansion doesn't need to know the difference.
+
+        However, ``metatensor`` output is expected to contain more information, so if our
+        input is a big "batch" graph, we need some additional information to keep track of
+        which nodes in the big graph belong to which original structure (``structures``)
+        and which atom in each structure is which (``centers``).
+
+        For a single-structure graph, this would be just zeros for ``structures`` and
+        ``torch.arange(n_atoms)`` for ``centers``. For a two-structure graph, it would
+        be a block of zeros and a block of ones for ``structures``, and then a range going
+        up to ``n_atoms_0`` and then a range going up to ``n_atoms_1`` for ``centers``.
+
+        Note that we take the center species to consider from the input species, so if
+        a given graph doesn't contain a given center species, it will also not appear in
+        the output.
+
+        Args:
+            R_ij (Tensor): Interatomic displacements of shape ``[pair, 3]``,
+                using the convention ``R_ij = R_j - R_i``.
+            i (Tensor): Center atom indices of shape ``[pair]``.
+            j (Tensor): Neighbour atom indices of shape ``[pair]``.
+            species (Tensor): Atomic species of shape ``[center]``, indicating the species
+                of the atoms indexed by ``i`` and ``j``.
+            structures (Tensor): Structure indices of shape ``[center]``, indicating which
+                structure each center atom belongs to.
+            centers (Tensor): Center atom indices of shape ``[center]``, indicating which
+                atom in each structure a given node is supposed to be.
+
+        Returns:
+            Spherical expansion, a ``TensorMap``.
+
+        """
+        # R_ij: [pair, 3]
+        # i: [pair]
+        # j: [pair]
+        # species: [center]
+        # structures: [center]
+        # centers: [center]
+
         output = self.calculator(R_ij, i, j, species)
 
         l_to_treat = torch.arange(
             self.calculator.max_angular + 1, dtype=i.dtype, device=i.device
         )
+        all_center_species = torch.unique(species)
+        all_neighbor_species = self.species
 
-        blocks: List[TensorBlock] = []  # type annotation for torchscript
+        # we're trying to match the rascaline output, which has keys for
+        # l, species_center, species_neighbor ... so, we need to extract
+        # the entries for each pair of species (or pseudo-species) at each l
+
+        blocks: List[TensorBlock] = []  # type annotation needed for torchscript
         for l in l_to_treat:
-            for species_center in self.species:
-                for i_species_neighbor, species_neighbor in enumerate(self.species):
+            for species_center in all_center_species:
+                for i_species_neighbor, species_neighbor in enumerate(all_neighbor_species):
                     center_mask = species == species_center
                     data = output[l][center_mask][..., i_species_neighbor]
 
@@ -81,13 +136,13 @@ class SphericalExpansion(Module, Specable):
 
         # torchscript doesn't let us sanely write the keys into a list as we loop,
         # so we just do it ourselves here. repeat_interleave for outer, repeat for inner
-
-        num_species = self.species.shape[0]
+        num_neighbor_species = all_neighbor_species.shape[0]
+        num_center_species = all_center_species.shape[0]
         num_l = l_to_treat.shape[0]
 
-        ls = l_to_treat.repeat_interleave(num_species * num_species)
-        center = self.species.repeat_interleave(num_species).repeat(num_l)
-        neighbor = self.species.repeat(num_species).repeat(num_l)
+        ls = l_to_treat.repeat_interleave(num_neighbor_species * num_center_species)
+        center = all_center_species.repeat_interleave(num_neighbor_species).repeat(num_l)
+        neighbor = all_neighbor_species.repeat(num_center_species).repeat(num_l)
 
         labels = Labels(
             ["spherical_harmonics_l", "species_center", "species_neighbor"],
