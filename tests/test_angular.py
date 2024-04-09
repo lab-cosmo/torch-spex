@@ -1,41 +1,18 @@
 import numpy as np
 import torch
 
-import math
 from unittest import TestCase
-
-from scipy.special import sph_harm
 
 
 class TestSphericalHarmonics(TestCase):
-    # we test against a (shortened) copy of the same test from rascaline,
-    # https://github.com/Luthaf/rascaline/blob/ae05064a28cf2d6e76c13c5673e57384aff4808a/
-    # ... rascaline/tests/data/spherical-harmonics.py
-    # which tests against scipy
+    # we test against hard-coded versions directly copied from
+    # https://en.wikipedia.org/wiki/Table_of_spherical_harmonics#Real_spherical_harmonics
+    # to verify/codify the convention we're using in this package...
+    # (we don't need to check for correctness, that's what sphericart is for)
 
     def setUp(self):
-        self.max_angular = 25
-        self.directions = np.array(
-            [
-                np.array([1.0, 0.0, 0.0]),
-                np.array([0.0, 1.0, 0.0]),
-                np.array([0.0, 0.0, 1.0]),
-                np.array([0.5773502691896258, 0.5773502691896258, 0.5773502691896258]),
-                np.array([0.455493902781557, 0.46164788218724867, -0.7611875835829522]),
-                np.array([-0.28695413002732584, -0.33058712239743676, -0.8990937002144119]),
-                np.array([0.35108584385989333, -0.9226014654045358, -0.15982886558625636]),
-            ]
-        )
-
-    def test_vs_scipy(self):
-        from spex.angular import SphericalHarmonics
-
-        sph = SphericalHarmonics(max_angular=self.max_angular)
-
-        ours = sph(torch.tensor(self.directions)).numpy()
-        reference = spherical_harmonics(self.max_angular, self.directions)
-
-        np.testing.assert_allclose(reference, ours, atol=1e-13)
+        self.max_angular = 1
+        self.directions = 3 * np.random.random((25, 3)) - 1.5  # NOT normalised
 
     def test_jit(self):
         from spex.angular import SphericalHarmonics
@@ -44,32 +21,37 @@ class TestSphericalHarmonics(TestCase):
         sph = torch.jit.script(sph)
         sph(torch.tensor(self.directions))
 
+    def test_hardcoded(self):
+        from spex.angular import SphericalHarmonics
 
-def real_sph(l, m, theta, phi):
-    """Compute real spherical harmonics from the complex version in scipy"""
-    m_1_pow_m = (-1) ** m
-    if m > 0:
-        return np.sqrt(2) * m_1_pow_m * np.real(sph_harm(m, l, theta, phi))
+        sph = SphericalHarmonics(max_angular=self.max_angular)
+
+        ours = sph(torch.tensor(self.directions)).numpy()
+
+        np.testing.assert_allclose(sph_0(self.directions), ours[:, 0])
+        np.testing.assert_allclose(sph_1(self.directions, -1), ours[:, 1])
+        np.testing.assert_allclose(sph_1(self.directions, 0), ours[:, 2])
+        np.testing.assert_allclose(sph_1(self.directions, +1), ours[:, 3])
+
+
+def angles(R):
+    R /= np.linalg.norm(R, axis=1)[:, None]
+    phi = np.arccos(R[:, 2])
+    theta = np.arctan2(R[:, 1], R[:, 0])
+
+    return phi, theta
+
+
+def sph_0(R):
+    return 0.5 * np.sqrt(1 / np.pi) * np.ones_like(R[:, 0])
+
+
+def sph_1(R, m):
+    theta, phi = angles(R)
+
+    if m == -1:
+        return np.sqrt(3 / (4 * np.pi)) * np.sin(theta) * np.sin(phi)
     elif m == 0:
-        return m_1_pow_m * np.real(sph_harm(0, l, theta, phi))
-    else:
-        return np.sqrt(2) * m_1_pow_m * np.imag(sph_harm(abs(m), l, theta, phi))
-
-
-def spherical_harmonics(max_angular, directions):
-    n_directions = len(directions)
-    values = np.zeros(
-        (n_directions, max_angular + 1, 2 * max_angular + 1), dtype=np.float64
-    )
-
-    values = []
-    for direction in directions:
-        out = []
-        phi = math.acos(direction[2])
-        theta = math.atan2(direction[1], direction[0])
-        for l in range(max_angular + 1):
-            for i_m, m in enumerate(range(-l, l + 1)):
-                out.append(real_sph(l, m, theta, phi))
-        values.append(np.array(out))
-
-    return np.array(values)
+        return np.sqrt(3 / (4 * np.pi)) * np.cos(theta)
+    elif m == +1:
+        return np.sqrt(3 / (4 * np.pi)) * np.sin(theta) * np.cos(phi)

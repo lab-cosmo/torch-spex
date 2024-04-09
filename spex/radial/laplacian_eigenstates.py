@@ -94,6 +94,7 @@ class LaplacianEigenstates(torch.nn.Module, Specable):
         # r: [pair]
         cutoff = self.cutoff_fn(r)  # -> [pair]
         basis = self.spliner(r)  # -> [pair, (l=0 n=0) (l=0 n=1) ... (l=1 n=0) ...]
+
         return cutoff.unsqueeze(1) * basis  # -> [pair, (l=0 n=0) (l=0 n=1) ...]
 
 

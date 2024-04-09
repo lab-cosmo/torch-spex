@@ -1,3 +1,4 @@
+import torch
 from torch.nn import Embedding, Module
 
 from spex.engine import Specable
@@ -25,6 +26,10 @@ class Alchemical(Module, Specable):
         # makes things very simple -- revisit later if needed
         self.embedding = Embedding(total_species, pseudo_species)
         # note: Embedding is initialised with a normal distribution by default
+
+        self.register_buffer(
+            "species", torch.arange(pseudo_species, dtype=torch.int64), persistent=False
+        )
 
     def forward(self, species):
         # species: [pair]

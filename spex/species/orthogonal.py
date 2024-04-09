@@ -33,6 +33,7 @@ class Orthogonal(Module, Specable):
             species_to_index[s] = i
 
         self.register_buffer("species_to_index", species_to_index, persistent=False)
+        self.register_buffer("species", species, persistent=False)
 
     def forward(self, species):
         # species: [pair]

@@ -33,7 +33,7 @@ class SphericalHarmonics(Module, Specable):
         self.m_per_l = [2 * l + 1 for l in range(max_angular + 1)]
 
         self.sph = Sph(
-            l_max=self.max_angular, normalized=False
+            l_max=self.max_angular, normalized=True
         )  # this computes spherical harmonics (not solid harmonics)
 
         self.spec = {"max_angular": self.max_angular}

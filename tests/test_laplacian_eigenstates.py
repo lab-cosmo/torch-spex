@@ -162,6 +162,3 @@ class TestRadialVsRascaline(TestCase):
                     ours = our_values[:, n + l * (self.max_radial + 1)].numpy()
 
                     np.testing.assert_allclose(reference, ours, atol=1e-4)
-
-
-# todo: test against the splines in rascaline, once they're accessible
