@@ -74,9 +74,9 @@ class SphericalExpansion(Module, Specable):
             species (Tensor): Atomic species of shape ``[center]``, indicating the species
                 of the atoms indexed by ``i`` and ``j``.
             structures (Tensor): Structure indices of shape ``[center]``, indicating which
-                structure each center atom belongs to.
+                structure each atom belongs to.
             centers (Tensor): Center atom indices of shape ``[center]``, indicating which
-                atom in each structure a given node is supposed to be.
+                atom in each structure a given node in the graph is supposed to be.
 
         Returns:
             Spherical expansion, a ``TensorMap``.

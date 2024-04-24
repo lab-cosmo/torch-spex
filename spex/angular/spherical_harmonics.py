@@ -29,6 +29,11 @@ class SphericalHarmonics(Module, Specable):
     """
 
     def __init__(self, max_angular):
+        """Initialise SphericalHarmonics.
+
+        Args:
+            max_angular (int): The maximum spherical harmonic order ``l`` to compute.
+        """
         super().__init__()
 
         self.max_angular = max_angular

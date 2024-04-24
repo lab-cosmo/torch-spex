@@ -96,7 +96,7 @@ class SphericalExpansion(Module, Specable):
             self.angular.m_per_l, dim=-1
         )  # -> ([pair, l=0 m...], [pair, l=1 m...], ...)
 
-        # note: can't use tuples or return generatos because jit cannot infer their shape
+        # note: can't use tuples or return generators because jit cannot infer their shape
         # ... outer products
         radial_and_angular_ij = list(
             torch.einsum("pn,pm->pmn", r, s) for r, s in zip(radial_ij, angular_ij)
