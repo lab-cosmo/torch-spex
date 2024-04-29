@@ -112,14 +112,14 @@ class SphericalExpansion(Module, Specable):
                         TensorBlock(
                             data,
                             samples=Labels(
-                                ["structure", "center"],
+                                ["system", "atom"],
                                 torch.stack(
                                     (structures[center_mask], centers[center_mask])
                                 ).T,
                             ),
                             components=[
                                 Labels(
-                                    "spherical_harmonics_m",
+                                    "o3_mu",
                                     torch.arange(
                                         -l, l + 1, dtype=i.dtype, device=i.device
                                     ).unsqueeze(1),
@@ -143,10 +143,15 @@ class SphericalExpansion(Module, Specable):
         ls = l_to_treat.repeat_interleave(num_neighbor_species * num_center_species)
         center = all_center_species.repeat_interleave(num_neighbor_species).repeat(num_l)
         neighbor = all_neighbor_species.repeat(num_center_species).repeat(num_l)
+        sigma = torch.ones(
+            num_l * num_center_species * num_neighbor_species,
+            dtype=i.dtype,
+            device=i.device,
+        )
 
         labels = Labels(
-            ["spherical_harmonics_l", "species_center", "species_neighbor"],
-            torch.stack((ls, center, neighbor)).T,
+            ["o3_lambda", "o3_sigma", "center_type", "neighbor_type"],
+            torch.stack((ls, sigma, center, neighbor)).T,
         )
 
         result = TensorMap(labels, blocks)
