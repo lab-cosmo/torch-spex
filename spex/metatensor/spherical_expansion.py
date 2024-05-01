@@ -42,7 +42,10 @@ class SphericalExpansion(Module, Specable):
             radial=radial, angular=angular, species=species
         )
         self.spec = self.calculator.spec
-        self.species = self.calculator.species.species
+
+        # torch will not move species to devices -- this is too indirect?
+        species = self.calculator.species.species
+        self.register_buffer("species", species, persistent=False)
 
     def forward(self, R_ij, i, j, species, structures, centers):
         """Compute spherical expansion.

@@ -21,6 +21,39 @@ class TestMetatenorSphericalExpansion(TestCase):
 
         exp(R_ij, i, j, species, structures, centers)
 
+    def test_different_backends(self):
+        from spex.metatensor.spherical_expansion import SphericalExpansion
+
+        for device in ("cpu", "cuda", "mps"):
+            # why is pytorch like this
+            if device == "cuda":
+                if not torch.cuda.is_available():
+                    continue
+            if device == "mps":
+                # sphericart does not support MPS; skip
+                continue
+
+            exp = SphericalExpansion()
+
+            R_ij = torch.randn((6, 3))
+            i = torch.tensor([0, 0, 1, 1, 2, 2])
+            j = torch.tensor([1, 2, 0, 2, 0, 1])
+            species = torch.tensor([8, 8, 64])
+
+            centers = torch.tensor([0, 1, 2])
+            structures = torch.tensor([0, 0, 0])
+
+            R_ij = R_ij.to(device)
+            i = i.to(device)
+            j = j.to(device)
+            species = species.to(device)
+            exp = exp.to(device)
+
+            centers = centers.to(device)
+            structures = structures.to(device)
+
+            exp(R_ij, i, j, species, centers, structures)
+
     def test_molecules_vs_rascaline(self):
         from ase.build import molecule
         from utils import combine_graphs, to_graph
