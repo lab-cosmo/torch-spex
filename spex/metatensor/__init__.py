@@ -8,3 +8,5 @@ pure torch ``Tensor``s. Currently we don't accept ``metatensor`` input.
 from .spherical_expansion import SphericalExpansion
 
 __all__ = [SphericalExpansion]
+
+modules = __all__
