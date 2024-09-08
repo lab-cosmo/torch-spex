@@ -28,7 +28,7 @@ class DynamicSpliner(Module):
         cutoff,
         values_fn,
         derivatives_fn,
-        accuracy=1e-3,
+        accuracy=1e-8,
     ):
         """Initialise a DynamicSpliner.
 

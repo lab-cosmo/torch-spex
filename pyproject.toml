@@ -8,6 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = ">=3.7"
 specable = ">=0.1.1"
+physical_basis = "==1.0.0"
 
 [tool.poetry.dev-dependencies]
 
