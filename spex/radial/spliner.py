@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Module
 
-MAX_SPLINE_POINTS = 2_000
+MAX_SPLINE_POINTS = 10_000  # the same as in rascaline
 
 
 class DynamicSpliner(Module):
@@ -60,7 +60,7 @@ class DynamicSpliner(Module):
 
             spline_values = values_fn(spline_positions)
             spline_derivatives = derivatives_fn(spline_positions)
-            spline_spacing = torch.tensor(spacing)
+            spline_spacing = torch.tensor(spacing, dtype=torch.float64)
 
             test_positions = torch.linspace(
                 start + spacing / 2,

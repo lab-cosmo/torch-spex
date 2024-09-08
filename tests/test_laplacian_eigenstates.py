@@ -144,7 +144,7 @@ class TestRadialVsRascaline(TestCase):
                 n_per_l=self.n_per_l,
                 normalize=False,
                 cutoff_function="step",
-                spliner_accuracy=1e-5,
+                spliner_accuracy=1e-8,
             )
             if device == "mps":
                 # mps is only single precision

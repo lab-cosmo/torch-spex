@@ -134,7 +134,7 @@ def compare(first, second, atol=1e-11):
     assert mt.allclose(first, second, atol=atol)
 
 
-def get_spex_calculator(cutoff, max_angular, max_radial, species, spliner_accuracy=1e-6):
+def get_spex_calculator(cutoff, max_angular, max_radial, species, spliner_accuracy=1e-8):
     from spex.metatensor.spherical_expansion import SphericalExpansion
 
     return SphericalExpansion(
@@ -154,7 +154,7 @@ def get_spex_calculator(cutoff, max_angular, max_radial, species, spliner_accura
 
 
 def get_rascaline_calculator(
-    cutoff, max_angular, max_radial, species, spliner_accuracy=1e-6
+    cutoff, max_angular, max_radial, species, spliner_accuracy=1e-8
 ):
     import rascaline
 
