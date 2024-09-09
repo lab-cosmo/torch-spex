@@ -36,6 +36,7 @@ class TestSphericalExpansion(TestCase):
 
         assert len(result) == 4
         for l, r in enumerate(result):
+            print(r.shape)
             assert r.shape[0] == len(species)
             assert r.shape[1] == 2 * l + 1
             assert r.shape[2] == 21
