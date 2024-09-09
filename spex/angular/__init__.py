@@ -11,5 +11,6 @@ summed over the entire neighbourhood.
 """
 
 from .spherical_harmonics import SphericalHarmonics
+from .solid_harmonics import SolidHarmonics
 
-__all__ = [SphericalHarmonics]
+__all__ = [SphericalHarmonics, SolidHarmonics]
