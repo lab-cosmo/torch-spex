@@ -52,7 +52,7 @@ class LaplacianEigenstates(torch.nn.Module):
         max_eigenvalue=None,
         n_per_l=None,
         trim=True,
-        spliner_accuracy=1e-2,
+        spliner_accuracy=1e-8,
         cutoff_function="shifted_cosine",
         normalize=True,
     ):
