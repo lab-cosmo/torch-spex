@@ -10,7 +10,7 @@ summed over the entire neighbourhood.
 
 """
 
-from .spherical_harmonics import SphericalHarmonics
 from .solid_harmonics import SolidHarmonics
+from .spherical_harmonics import SphericalHarmonics
 
 __all__ = [SphericalHarmonics, SolidHarmonics]

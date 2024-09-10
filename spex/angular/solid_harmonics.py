@@ -2,10 +2,8 @@ from torch.nn import Module
 
 from sphericart.torch import SolidHarmonics as Soh
 
-from spex.engine import Specable
 
-
-class SolidHarmonics(Module, Specable):
+class SolidHarmonics(Module):
     """Solid harmonics.
 
     Expands vectors in solid harmonics as defined in ``sphericart``.

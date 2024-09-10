@@ -6,10 +6,9 @@ from typing import List
 from metatensor.torch import Labels, TensorBlock, TensorMap
 
 from spex import SphericalExpansion as torchSphericalExpansion
-from spex.engine import Specable
 
 
-class SphericalExpansion(Module, Specable):
+class SphericalExpansion(Module):
     """SphericalExpansion, but with metatensor output.
 
     Wrapper for ``spex.SphericalExpansion`` that returns a ``TensorMap``.

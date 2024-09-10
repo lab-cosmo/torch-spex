@@ -2,10 +2,8 @@ from torch.nn import Module
 
 from sphericart.torch import SphericalHarmonics as Sph
 
-from spex.engine import Specable
 
-
-class SphericalHarmonics(Module, Specable):
+class SphericalHarmonics(Module):
     """Spherical harmonics.
 
     Expands vectors in spherical harmonics using ``sphericart``.

@@ -6,13 +6,11 @@ from functools import cache
 import scipy as sp
 from scipy.special import spherical_jn as j_l
 
-from spex.engine import Specable
-
 from .cutoff import get_cutoff_function
 from .spliner import DynamicSpliner
 
 
-class LaplacianEigenstates(torch.nn.Module, Specable):
+class LaplacianEigenstates(torch.nn.Module):
     """Laplacian Eigenstate (Radial, Splined, Cut-off) Basis.
 
     Implements the Laplacian eigenstate basis from Bigi et al., doi:10.1063/5.0124363,

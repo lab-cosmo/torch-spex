@@ -2,10 +2,9 @@ import torch
 from torch.nn import Module
 
 from spex import from_dict
-from spex.engine import Specable
 
 
-class SphericalExpansion(Module, Specable):
+class SphericalExpansion(Module):
     """SphericalExpansion.
 
     Computes spherical expansions for neighbourhoods of atoms, embedding the
@@ -44,13 +43,15 @@ class SphericalExpansion(Module, Specable):
 
         # we can't rely on knowing max_angular head of time, so we need to
         # first instantiate the radial expansion and then check what we're dealing with
-        self.radial = from_dict(radial)
+        self.radial = from_dict(radial, module="spex.radial")
 
         self.max_angular = self.radial.max_angular
         # todo: consider making this more modular somehow
-        self.angular = from_dict({angular: {"max_angular": self.max_angular}})
+        self.angular = from_dict(
+            {angular: {"max_angular": self.max_angular}}, module="spex.angular"
+        )
 
-        self.species = from_dict(species)
+        self.species = from_dict(species, module="spex.species")
 
     def forward(self, R_ij, i, j, species):
         """Compute spherical expansion.

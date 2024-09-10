@@ -5,11 +5,11 @@ from unittest import TestCase
 
 class TestSphericalExpansion(TestCase):
     def test_instantiation(self):
-        from spex import from_dict
+        from spex import from_dict, to_dict
         from spex.spherical_expansion import SphericalExpansion
 
         exp = SphericalExpansion()
-        from_dict(exp.to_dict())
+        from_dict(to_dict(exp))
 
     def test_shapes(self):
         from spex.spherical_expansion import SphericalExpansion
