@@ -2,10 +2,8 @@ import torch
 from torch.nn import Module
 from torch.nn.functional import one_hot
 
-from spex.engine import Specable
 
-
-class Orthogonal(Module, Specable):
+class Orthogonal(Module):
     """Orthogonal species embedding.
 
     All species are embedded as orthogonal, i.e., one-hot vectors. No features

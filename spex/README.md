@@ -1,13 +1,4 @@
-### Roadmap
-
-- ✅ Integrate `ruff` formatting + linting + isort etc. pp.
-- ✅ Write `SphericalExpansion` class
-- ✅ Make actual `git` repo :)
-- Integrate `specable` & test that it works
-- ✅ Write `metatensor` interface for `SphericalExpansion`
-- ✅ Write basic docstrings for entire public API (sort out init vs class docstring q)
-- Make public git repo and solicit feedback
-
+# `spex`: Technical README
 
 ### Conventions
 

@@ -1,10 +1,8 @@
 import torch
 from torch.nn import Embedding, Module
 
-from spex.engine import Specable
 
-
-class Alchemical(Module, Specable):
+class Alchemical(Module):
     """Alchemical species embedding.
 
     Atomic species are mapped to a fixed-size space of "pseudo species".

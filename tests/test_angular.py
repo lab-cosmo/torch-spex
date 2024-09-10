@@ -55,3 +55,18 @@ def sph_1(R, m):
         return np.sqrt(3 / (4 * np.pi)) * np.cos(theta)
     elif m == +1:
         return np.sqrt(3 / (4 * np.pi)) * np.sin(theta) * np.cos(phi)
+
+
+class TestSolidHarmonics(TestCase):
+    # a basic test to check that the SolidHarmonics class works
+
+    def setUp(self):
+        self.max_angular = 1
+        self.directions = 3 * np.random.random((25, 3)) - 1.5  # NOT normalised
+
+    def test_jit(self):
+        from spex.angular import SolidHarmonics
+
+        sph = SolidHarmonics(max_angular=self.max_angular)
+        sph = torch.jit.script(sph)
+        sph(torch.tensor(self.directions))
