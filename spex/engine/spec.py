@@ -20,8 +20,13 @@ def to_dict(module):
 def from_dict(dct, module=None):
     handle, inner = parse_dict(dct)
 
-    if module is None:
-        module = ".".join(handle.split(".")[:-1])
+    inferred_module = ".".join(handle.split(".")[:-1])
+
+    if inferred_module != "":
+        # we prefer an explicitly given module to any default
+        module = inferred_module
+    else:
+        assert module is not None, f"couldn't find module for {handle}"
 
     module = importlib.import_module(module)
 
