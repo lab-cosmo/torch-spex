@@ -22,6 +22,7 @@ class SphericalExpansion(Module):
         },
         angular="SphericalHarmonics",
         species={"Alchemical": {"pseudo_species": 4}},
+        cutoff_function={"ShiftedCosine": {"width": 0.5}},
     ):
         """Initialise SphericalExpansion.
 

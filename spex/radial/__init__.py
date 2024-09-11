@@ -8,6 +8,7 @@ Currently, only one basis is implemented, the ``LaplacianEigenstates`` basis.
 
 """
 
+from .bernstein import Bernstein
 from .laplacian_eigenstates import LaplacianEigenstates
 
-__all__ = [LaplacianEigenstates]
+__all__ = [LaplacianEigenstates, Bernstein]

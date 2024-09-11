@@ -9,14 +9,13 @@ license = "MIT"
 python = ">=3.7"
 numpy = "*"
 PyYAML = "*"
-scipy = {version = "*", optional = true}
+scipy = "*"
 pytest = {version = "*", optional = true}
 ruff = {version = "*", optional = true}
 ase = {version = "*", optional = true}
 
 [tool.poetry.extras]
 dev = ["pytest", "ruff", "ase"]
-le = ["scipy"]
 
 [build-system]
 requires = ["poetry-core"]

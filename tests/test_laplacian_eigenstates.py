@@ -113,7 +113,6 @@ class TestRadialVsRascaline(TestCase):
                 self.cutoff,
                 n_per_l=self.n_per_l,
                 normalize=False,
-                cutoff_function="step",
                 spliner_accuracy=spliner_accuracy,
             )
 
@@ -143,7 +142,6 @@ class TestRadialVsRascaline(TestCase):
                 self.cutoff,
                 n_per_l=self.n_per_l,
                 normalize=False,
-                cutoff_function="step",
                 spliner_accuracy=1e-8,
             )
             if device == "mps":

@@ -27,8 +27,6 @@ pip install -e .
 # or (to install pytest, etc)
 pip install -e .[dev]
 
-# or (to use the LaplacianEigenstate basis)
-pip install -e .[le]
 ```
 
 ## Development

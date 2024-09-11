@@ -6,12 +6,11 @@ from functools import cache
 import scipy as sp
 from scipy.special import spherical_jn as j_l
 
-from .cutoff import get_cutoff_function
 from .spliner import DynamicSpliner
 
 
 class LaplacianEigenstates(torch.nn.Module):
-    """Laplacian Eigenstate (Radial, Splined, Cut-off) Basis.
+    """(Splined) Laplacian Eigenstate Basis.
 
     Implements the Laplacian eigenstate basis from Bigi et al., doi:10.1063/5.0124363,
     which is composed of spherical Bessel functions and then splined. These functions
@@ -26,11 +25,6 @@ class LaplacianEigenstates(torch.nn.Module):
     ``trim=False`` is selected, a "rectangular" basis of size
     ``[max_radial + 1, max_angular + 1]`` is produced. For a further explanation,
     see https://luthaf.fr/rascaline/latest/how-to/le-basis.html.
-
-    We modify the basis functions with a cutoff function ensuring to ensure a smooth
-    decay to zero at ``cutoff``, using a ``"shifted_cosine"``.
-
-    A discontinuous cutoff, ``"step"``, is recommended for testing only.
 
     Inputs are expected to be a one-dimensional ``Tensor`` of distances.
 
@@ -53,7 +47,6 @@ class LaplacianEigenstates(torch.nn.Module):
         n_per_l=None,
         trim=True,
         spliner_accuracy=1e-8,
-        cutoff_function="shifted_cosine",
         normalize=True,
     ):
         """Initialise the Laplacian Eigenstate basis.
@@ -79,8 +72,6 @@ class LaplacianEigenstates(torch.nn.Module):
                 (Overrides other options for basis selection.)
             trim (bool, optional): Whether to trim the basis.
             spliner_accuracy (float, optional): The accuracy of the spliner.
-            cutoff_function (str, optional): The cutoff function to use, either
-                ``shifted_cosine`` or ``step``.
             normalize (bool, optional): Whether to normalize the basis functions,
                 measured by squared integral over the interval ``[0, cutoff]``.
 
@@ -95,7 +86,6 @@ class LaplacianEigenstates(torch.nn.Module):
             "max_eigenvalue": max_eigenvalue,
             "trim": trim,
             "spliner_accuracy": spliner_accuracy,
-            "cutoff_function": cutoff_function,
             "normalize": normalize,
         }
 
@@ -104,6 +94,7 @@ class LaplacianEigenstates(torch.nn.Module):
             self.spec["n_per_l"] = n_per_l
 
         # runtime
+        self.per_degree = True
         self.n_per_l = get_basis_size(
             cutoff,
             max_radial=max_radial,
@@ -113,12 +104,11 @@ class LaplacianEigenstates(torch.nn.Module):
             trim=trim,
         )
         self.max_angular = len(self.n_per_l) - 1
+        self.register_buffer("cutoff", torch.tensor(cutoff))
 
         R, dR = get_spliner_inputs(cutoff, self.n_per_l, normalize=normalize)
 
         self.spliner = DynamicSpliner(cutoff, R, dR, accuracy=spliner_accuracy)
-
-        self.cutoff_fn = get_cutoff_function(cutoff, cutoff_function)
 
     def forward(self, r):
         """Compute the radial expansion.
@@ -130,10 +120,9 @@ class LaplacianEigenstates(torch.nn.Module):
             Expansion of shape ``[pair, sum([n for n in n_per_l])]``.
         """
         # r: [pair]
-        cutoff = self.cutoff_fn(r)  # -> [pair]
         basis = self.spliner(r)  # -> [pair, (l=0 n=0) (l=0 n=1) ... (l=1 n=0) ...]
 
-        return cutoff.unsqueeze(1) * basis  # -> [pair, (l=0 n=0) (l=0 n=1) ...]
+        return basis  # -> [pair, (l=0 n=0) (l=0 n=1) ...]
 
 
 def get_spliner_inputs(cutoff, n_per_l, normalize=False):

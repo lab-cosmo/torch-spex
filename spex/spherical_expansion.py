@@ -21,6 +21,7 @@ class SphericalExpansion(Module):
         },
         angular="SphericalHarmonics",
         species={"Alchemical": {"pseudo_species": 4}},
+        cutoff_function={"ShiftedCosine": {"width": 0.5}},
     ):
         """Initialise SphericalExpansion.
 
@@ -39,19 +40,22 @@ class SphericalExpansion(Module):
             "radial": radial,
             "angular": angular,
             "species": species,
+            "cutoff_function": cutoff_function,
         }
 
-        # we can't rely on knowing max_angular head of time, so we need to
-        # first instantiate the radial expansion and then check what we're dealing with
+        # instantiate the radial expansion and then check what we're dealing with
         self.radial = from_dict(radial, module="spex.radial")
 
         self.max_angular = self.radial.max_angular
-        # todo: consider making this more modular somehow
+        self.cutoff = self.radial.cutoff
+        self.radial_per_degree = self.radial.per_degree
+
         self.angular = from_dict(
             {angular: {"max_angular": self.max_angular}}, module="spex.angular"
         )
 
         self.species = from_dict(species, module="spex.species")
+        self.cutoff_fn = from_dict(cutoff_function, module="spex.radial.cutoff")
 
     def forward(self, R_ij, i, j, species):
         """Compute spherical expansion.
@@ -85,15 +89,23 @@ class SphericalExpansion(Module):
         Z_j = species[j]
 
         # pairwise expansions
-        radial_ij = self.radial(r_ij)  # -> [pair, l_and_n]
-        angular_ij = self.angular(R_ij)  # -> [pair, l_and_m]
+        dense_radial_ij = self.radial(r_ij)  # -> [pair, l_and_n]
+        cutoff_ij = self.cutoff_fn(r_ij, self.cutoff)  # -> [pair]
+        dense_angular_ij = self.angular(R_ij)  # -> [pair, l_and_m]
         species_ij = self.species(Z_j)  # -> [pair, species]
 
-        # ... split into tuples per l
-        radial_ij = radial_ij.split(
-            self.radial.n_per_l, dim=-1
-        )  # -> ([pair, l=0 n...], [pair, l=1 n...], ...)
-        angular_ij = angular_ij.split(
+        # apply cutoff
+        dense_radial_ij *= cutoff_ij.unsqueeze(-1)
+
+        # ... split into tuples per l (if we have different radial basis per degree)
+        if self.radial_per_degree:
+            radial_ij = dense_radial_ij.split(
+                self.radial.n_per_l, dim=-1
+            )  # -> ([pair, l=0 n...], [pair, l=1 n...], ...)
+        else:
+            radial_ij = [dense_radial_ij for _ in range(self.max_angular + 1)]
+
+        angular_ij = dense_angular_ij.split(
             self.angular.m_per_l, dim=-1
         )  # -> ([pair, l=0 m...], [pair, l=1 m...], ...)
 

@@ -145,11 +145,11 @@ def get_spex_calculator(cutoff, max_angular, max_radial, species, spliner_accura
                 "max_angular": max_angular,
                 "trim": False,
                 "spliner_accuracy": spliner_accuracy,
-                "cutoff_function": "shifted_cosine",
             }
         },
         angular="SphericalHarmonics",
         species={"Orthogonal": {"species": species}},
+        cutoff_function={"ShiftedCosine": {"width": 0.5}},
     )
 
 
