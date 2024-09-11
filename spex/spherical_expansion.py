@@ -57,6 +57,17 @@ class SphericalExpansion(Module):
         self.species = from_dict(species, module="spex.species")
         self.cutoff_fn = from_dict(cutoff_function, module="spex.radial.cutoff")
 
+        if self.radial_per_degree:
+            self.shape = tuple(
+                (m, int(self.radial.n_per_l[l]), self.species.species.shape[0])
+                for l, m in enumerate(self.angular.m_per_l)
+            )
+        else:
+            self.shape = tuple(
+                (m, int(self.radial.n_per_l[0]), self.species.species.shape[0])
+                for l, m in enumerate(self.angular.m_per_l)
+            )
+
     def forward(self, R_ij, i, j, species):
         """Compute spherical expansion.
 

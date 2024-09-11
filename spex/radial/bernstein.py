@@ -28,7 +28,7 @@ class Bernstein(torch.nn.Module):
         self.spec = {"num_radial": num_radial, "cutoff": cutoff, "max_angular": max_angular}
 
         self.per_degree = False
-        self.n_per_l = torch.tensor([])  # torchscript :(
+        self.n_per_l = torch.tensor([num_radial])  # torchscript :(
 
         n = num_radial - 1
         v = np.arange(n + 1)
