@@ -11,7 +11,7 @@ def to_dict(module):
         inner = deepcopy(module.spec)
     else:
         raise ValueError(
-            f"{handle} does not have a spec attributeö cannot not be turned into a dict."
+            f"{handle} does not have a spec attribute; cannot not be turned into a dict."
         )
 
     return {handle: inner}
