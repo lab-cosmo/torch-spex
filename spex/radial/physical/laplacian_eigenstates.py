@@ -117,12 +117,14 @@ class LaplacianEigenstates(torch.nn.Module):
             r (Tensor): Input distances of shape ``[pair]``.
 
         Returns:
-            Expansion of shape ``[pair, sum([n for n in n_per_l])]``.
+            Per-degree list expansion of shape ``[pair, self.n_per_l[l]]``.
         """
         # r: [pair]
         basis = self.spliner(r)  # -> [pair, (l=0 n=0) (l=0 n=1) ... (l=1 n=0) ...]
 
-        return basis  # -> [pair, (l=0 n=0) (l=0 n=1) ...]
+        per_degree = basis.split(self.n_per_l, dim=-1)
+
+        return per_degree
 
 
 def get_spliner_inputs(cutoff, n_per_l, normalize=False):

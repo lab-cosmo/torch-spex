@@ -48,7 +48,6 @@ class SphericalExpansion(Module):
 
         self.max_angular = self.radial.max_angular
         self.cutoff = self.radial.cutoff
-        self.radial_per_degree = self.radial.per_degree
 
         self.angular = from_dict(
             {angular: {"max_angular": self.max_angular}}, module="spex.angular"
@@ -57,16 +56,10 @@ class SphericalExpansion(Module):
         self.species = from_dict(species, module="spex.species")
         self.cutoff_fn = from_dict(cutoff_function, module="spex.radial.cutoff")
 
-        if self.radial_per_degree:
-            self.shape = tuple(
-                (m, int(self.radial.n_per_l[l]), self.species.species.shape[0])
-                for l, m in enumerate(self.angular.m_per_l)
-            )
-        else:
-            self.shape = tuple(
-                (m, int(self.radial.n_per_l[0]), self.species.species.shape[0])
-                for l, m in enumerate(self.angular.m_per_l)
-            )
+        self.shape = tuple(
+            (m, int(self.radial.n_per_l[l]), self.species.species.shape[0])
+            for l, m in enumerate(self.angular.m_per_l)
+        )
 
     def forward(self, R_ij, i, j, species):
         """Compute spherical expansion.
@@ -100,32 +93,19 @@ class SphericalExpansion(Module):
         Z_j = species[j]
 
         # pairwise expansions
-        dense_radial_ij = self.radial(r_ij)  # -> [pair, l_and_n]
+        radial_ij = self.radial(r_ij)  # -> [[pair, l=0 n], [pair, l=1 n], ...]
         cutoff_ij = self.cutoff_fn(r_ij, self.cutoff)  # -> [pair]
-        dense_angular_ij = self.angular(R_ij)  # -> [pair, l_and_m]
+        angular_ij = self.angular(R_ij)  # -> [[pair, l=0 m=0], [pair, l=1 m=-1, ...] ...]
         species_ij = self.species(Z_j)  # -> [pair, species]
 
         # apply cutoff
-        dense_radial_ij *= cutoff_ij.unsqueeze(-1)
-
-        # ... split into tuples per l (if we have different radial basis per degree)
-        if self.radial_per_degree:
-            radial_ij = dense_radial_ij.split(
-                self.radial.n_per_l, dim=-1
-            )  # -> ([pair, l=0 n...], [pair, l=1 n...], ...)
-        else:
-            radial_ij = [dense_radial_ij for _ in range(self.max_angular + 1)]
-
-        angular_ij = dense_angular_ij.split(
-            self.angular.m_per_l, dim=-1
-        )  # -> ([pair, l=0 m...], [pair, l=1 m...], ...)
+        radial_ij = [r * cutoff_ij.unsqueeze(-1) for r in radial_ij]
 
         # note: can't use tuples or return generators because jit cannot infer their shape
-        # ... outer products
+        # perform outer products
         radial_and_angular_ij = list(
             torch.einsum("pn,pm->pmn", r, s) for r, s in zip(radial_ij, angular_ij)
         )  # -> [[pair, l=0 m,n], [pair, l=1 m,n], ...]
-
         full_expansion_ij = list(
             torch.einsum("pln,pc->plnc", ra, species_ij) for ra in radial_and_angular_ij
         )  # -> [[pair, l=0 m,n,c], [pair, l=1 m,n,c], ...]

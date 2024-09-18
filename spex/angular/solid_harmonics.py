@@ -12,14 +12,8 @@ class SolidHarmonics(Module):
     which are ortho-normalised when integrated over the sphere, times
     ``r**l``.
 
-    Inputs are expexted to be a ``[pair, 3]``, i.e. 2D ``Tensor`` of vectors,
-    and are returned as ``[pair, sum([2*l+1 for i in range(max_angular+1)])]``,
-    i.e. all solid harmonics flattened across the second dimension. We use the
-    order ``(l=0 m=0) (l=1 m=-1) (l=1 m=0) (l=1 m=+1) (l=2, m=-2) ...``. (Recall
-    that each ``m`` runs from ``-l`` to ``+l`` in steps of ``1``.)
-
-    The attribute ``m_per_l`` provides the number of ``m`` for each ``l``, and
-    can therefore be used in ``torch.split`` to obtain separate features per ``l``.
+    Inputs are expected to be a ``[pair, 3]``, i.e. 2D ``Tensor`` of vectors,
+    and are returned as a list of tensors, one per degree, with shape ``[pair, 2l+1]``.
 
     Attributes:
         max_angular (int): The maximum solid harmonic order ``l`` to compute.
@@ -50,10 +44,12 @@ class SolidHarmonics(Module):
             R (Tensor): Input vectors of shape ``[pair, 3]``.
 
         Returns:
-            Solid harmonics of shape
-                ``[pair, sum([2*l+1 for i in range(max_angular+1)])]``.
+            Solid harmonics as a list of tensors, one per ``l``,
+                of shape ``[pair, 2*l + 1]``.
 
         """
         # R: [pair, 3 (x,y,z)]
-        # todo: make special case for "mps" backend (need to move to `cpu`)
-        return self.soh.compute(R)  # -> [pair, (l=0 m=0) (l=1 m=-1) (l=1 m=0) ...]
+        expansion = self.soh.compute(R)
+        return expansion.split(
+            self.m_per_l, dim=-1
+        )  # -> [[pair, l=0 m=0], [pair, (l=1 m=-1) (l=1 m=0) ...], ...]

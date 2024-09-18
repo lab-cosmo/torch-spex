@@ -6,7 +6,7 @@ from unittest import TestCase
 
 class TestBasisSetSizes(TestCase):
     def test_hypers(self):
-        from spex.radial.laplacian_eigenstates import get_basis_size
+        from spex.radial.physical.laplacian_eigenstates import get_basis_size
 
         # test the allowed options for get_basis_size
         # numbers from https://luthaf.fr/rascaline/latest/how-to/le-basis.html
@@ -36,7 +36,7 @@ class TestBasisSetSizes(TestCase):
         assert n_per_l == max_n_per_l2
 
     def test_shape(self):
-        from spex.radial.laplacian_eigenstates import LaplacianEigenstates
+        from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
 
         basis = LaplacianEigenstates(
             4.4,
@@ -48,8 +48,9 @@ class TestBasisSetSizes(TestCase):
 
         out = basis(r)
 
-        assert out.shape[0] == 100
-        assert out.shape[1] == np.sum(basis.n_per_l)
+        for r in out:
+            assert r.shape[0] == 100
+        assert np.sum([r.shape[1] for r in out]) == np.sum(basis.n_per_l)
 
 
 class TestRadialVsRascaline(TestCase):
@@ -70,7 +71,7 @@ class TestRadialVsRascaline(TestCase):
         )
 
     def test_basis_directly(self):
-        from spex.radial.laplacian_eigenstates import get_basis_functions
+        from spex.radial.physical.laplacian_eigenstates import get_basis_functions
 
         R, dR = get_basis_functions(self.cutoff, self.n_per_l, normalize=False)
 
@@ -87,7 +88,7 @@ class TestRadialVsRascaline(TestCase):
                 np.testing.assert_allclose(reference, ours)
 
     def test_torch_basis(self):
-        from spex.radial.laplacian_eigenstates import get_spliner_inputs
+        from spex.radial.physical.laplacian_eigenstates import get_spliner_inputs
 
         R, dR = get_spliner_inputs(self.cutoff, self.n_per_l, normalize=False)
         our_values = R(self.r_torch)
@@ -106,7 +107,7 @@ class TestRadialVsRascaline(TestCase):
                 np.testing.assert_allclose(reference, ours)
 
     def test_splined_and_jitted(self):
-        from spex.radial.laplacian_eigenstates import LaplacianEigenstates
+        from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
 
         for spliner_accuracy, test_accuracy in ((1e-3, 1e-2), (1e-5, 1e-4)):
             basis = LaplacianEigenstates(
@@ -118,6 +119,7 @@ class TestRadialVsRascaline(TestCase):
 
             basis = torch.jit.script(basis)
             our_values = basis(self.r_torch)
+            our_values = torch.cat(our_values, dim=-1)
 
             for n in range(self.max_radial + 1):
                 for l in range(self.max_angular + 1):
@@ -127,7 +129,7 @@ class TestRadialVsRascaline(TestCase):
                     np.testing.assert_allclose(reference, ours, atol=test_accuracy)
 
     def test_different_backends(self):
-        from spex.radial.laplacian_eigenstates import LaplacianEigenstates
+        from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
 
         for device in ("cpu", "cuda", "mps"):
             # why is pytorch like this
@@ -148,11 +150,11 @@ class TestRadialVsRascaline(TestCase):
                 # mps is only single precision
                 basis = basis.to(torch.float32).to(device)
                 r_torch = self.r_torch.to(torch.float32).to(device)
-                our_values = basis(r_torch).cpu()
+                our_values = torch.cat(basis(r_torch), dim=-1).cpu()
             else:
                 basis = basis.to(device)
                 r_torch = self.r_torch.to(device)
-                our_values = basis(r_torch).cpu()
+                our_values = torch.cat(basis(r_torch), dim=-1).cpu()
 
             for n in range(self.max_radial + 1):
                 for l in range(self.max_angular + 1):

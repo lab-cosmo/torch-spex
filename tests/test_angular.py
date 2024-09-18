@@ -26,7 +26,7 @@ class TestSphericalHarmonics(TestCase):
 
         sph = SphericalHarmonics(max_angular=self.max_angular)
 
-        ours = sph(torch.tensor(self.directions)).numpy()
+        ours = torch.cat(sph(torch.tensor(self.directions)), dim=-1).numpy()
 
         np.testing.assert_allclose(sph_0(self.directions), ours[:, 0])
         np.testing.assert_allclose(sph_1(self.directions, -1), ours[:, 1])
