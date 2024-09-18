@@ -3,6 +3,8 @@ from torch.nn import Module
 
 from spex import from_dict
 
+from .utils import compute_distance
+
 
 class SphericalExpansion(Module):
     """SphericalExpansion.
@@ -88,8 +90,7 @@ class SphericalExpansion(Module):
         # j: [pair]
         # species: [center]
 
-        # todo: consider making this more safe for very small or very large inputs
-        r_ij = torch.sqrt((R_ij**2).sum(dim=-1))
+        r_ij = compute_distance(R_ij)  # -> [pair]
         Z_j = species[j]
 
         # pairwise expansions
@@ -103,26 +104,26 @@ class SphericalExpansion(Module):
 
         # note: can't use tuples or return generators because jit cannot infer their shape
         # perform outer products
-        radial_and_angular_ij = list(
+        radial_and_angular_ij = [
             torch.einsum("pn,pm->pmn", r, s) for r, s in zip(radial_ij, angular_ij)
-        )  # -> [[pair, l=0 m,n], [pair, l=1 m,n], ...]
-        full_expansion_ij = list(
+        ]  # -> [[pair, l=0 m,n], [pair, l=1 m,n], ...]
+        full_expansion_ij = [
             torch.einsum("pln,pc->plnc", ra, species_ij) for ra in radial_and_angular_ij
-        )  # -> [[pair, l=0 m,n,c], [pair, l=1 m,n,c], ...]
+        ]  # -> [[pair, l=0 m,n,c], [pair, l=1 m,n,c], ...]
 
         # aggregation over pairs
         #  note: scatter_add wouldn't work:
         #  it expects the index and source arrays to have the same shape,
         #  while index_add broadcasts across all the non-indexed dims
-        full_expansion = list(
-            (
-                torch.zeros(
-                    (species.shape[0], e.shape[1], e.shape[2], e.shape[3]),
-                    dtype=e.dtype,
-                    device=e.device,
-                )
+        #  note: we also can't extract this into a general function because torchscript
+        #        is unable to infer varying shapes for the outputs
+        full_expansion = [
+            torch.zeros(
+                (species.shape[0], e.shape[1], e.shape[2], e.shape[3]),
+                dtype=e.dtype,
+                device=e.device,
             ).index_add_(0, i, e)
             for e in full_expansion_ij
-        )  # -> [[i, l=0 m,n,c], [i, l=1 m,n,c], ...]
+        ]  # -> [[i, l=0 m,n,c], [i, l=1 m,n,c], ...]
 
         return full_expansion  # -> [[i, l=0 m,n,c], [i, l=1 m,n,c], ...]

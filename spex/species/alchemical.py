@@ -12,7 +12,7 @@ class Alchemical(Module):
 
     Attributes:
         species (Tensor): Pseudo species used here, just counting from 0.
-            (Can be used to map indices back psuedo species names.)
+            (Can be used to map indices back to pseudo species names.)
 
     """
 
