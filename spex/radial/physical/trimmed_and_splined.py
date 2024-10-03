@@ -115,10 +115,10 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
 
         Inputs are expected to be a one-dimensional ``Tensor`` of distances.
 
-        Outputs are always given in a two-dimensional ``Tensor``; all basis functions are
-        flattened across one dimension and arranged in blocks of increasing ``l``. The
-        ``n_per_l`` attribute of instances of this class provides the sizes required for
-        ``torch.split`` to obtain features per ``l``.
+        Outputs are always given as a list of two-dimensional ``Tensor`` instances.
+        Each element of the list corresponds to one angular channel, in blocks of increasing
+        ``l``, and it contains the sample on the first axis and the basis functions for that
+        angular channel on the second axis.
 
         Args:
             r (Tensor): Input distances of shape ``[pair]``.
