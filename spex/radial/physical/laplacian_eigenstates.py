@@ -31,7 +31,7 @@ class LaplacianEigenstates(TrimmedAndSplined):
     def __init__(
         self,
         cutoff,
-        max_radial=10,
+        max_radial=None,
         max_angular=None,
         max_eigenvalue=None,
         n_per_l=None,

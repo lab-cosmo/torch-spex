@@ -16,25 +16,25 @@ class TestBasisSetSizes(TestCase):
         n_per_l = physical_basis.n_per_l
         np.testing.assert_equal(n_per_l, np.array([3, 3, 2, 1]))
 
-        physical_basis = PhysicalBasis(cutoff, max_radial=20, trim=True)
+        physical_basis = PhysicalBasis(cutoff, max_radial=8, trim=True)
         n_per_l = physical_basis.n_per_l
-        assert max(n_per_l) == 21
-        assert n_per_l[0] == 21
+        assert max(n_per_l) == 9
+        assert n_per_l[0] == 9
 
-        physical_basis = PhysicalBasis(cutoff, max_angular=20, trim=True)
+        physical_basis = PhysicalBasis(cutoff, max_angular=6, trim=True)
         n_per_l = physical_basis.n_per_l
-        assert len(n_per_l) == 21
+        assert len(n_per_l) == 7
 
-        physical_basis = PhysicalBasis(cutoff, max_angular=20, max_radial=20, trim=True)
+        physical_basis = PhysicalBasis(cutoff, max_angular=6, max_radial=6, trim=True)
         n_per_l = physical_basis.n_per_l
-        assert max(n_per_l) == 21
-        assert len(n_per_l) <= 21
+        assert max(n_per_l) == 7
+        assert len(n_per_l) <= 7
 
-        physical_basis = PhysicalBasis(cutoff, max_angular=20, max_radial=20, trim=False)
+        physical_basis = PhysicalBasis(cutoff, max_angular=6, max_radial=6, trim=False)
         n_per_l = physical_basis.n_per_l
-        assert n_per_l[0] == 21
-        assert n_per_l[-1] == 21
-        assert len(n_per_l) == 21
+        assert n_per_l[0] == 7
+        assert n_per_l[-1] == 7
+        assert len(n_per_l) == 7
 
         physical_basis_2 = PhysicalBasis(cutoff, n_per_l=n_per_l)
         n_per_l2 = physical_basis_2.n_per_l

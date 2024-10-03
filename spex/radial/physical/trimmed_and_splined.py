@@ -32,7 +32,7 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
     def __init__(
         self,
         cutoff,
-        max_radial=10,
+        max_radial=None,
         max_angular=None,
         max_eigenvalue=None,
         n_per_l=None,
@@ -68,6 +68,15 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
 
         """
         super().__init__()
+
+        # if the user specified nothing, we go with max_radial=10
+        if (
+            max_radial is None and
+            max_angular is None and
+            max_eigenvalue is None and
+            n_per_l is None
+        ):
+            max_radial = 10
 
         # spec
         self.spec = {
