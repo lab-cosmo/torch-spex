@@ -183,7 +183,7 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
 
                 # ... then we restrict further
                 n_per_l = self.trim_basis(max_eigenvalue, eigenvalues_ln)
-                return n_per_l[:max_angular]
+                return n_per_l[:max_angular+1]
 
         else:
             assert max_radial is None
