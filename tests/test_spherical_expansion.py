@@ -5,11 +5,11 @@ from unittest import TestCase
 
 class TestSphericalExpansion(TestCase):
     def test_instantiation(self):
-        from spex import from_dict
+        from spex import from_dict, to_dict
         from spex.spherical_expansion import SphericalExpansion
 
         exp = SphericalExpansion()
-        from_dict(exp.to_dict())
+        from_dict(to_dict(exp))
 
     def test_shapes(self):
         from spex.spherical_expansion import SphericalExpansion
@@ -44,15 +44,32 @@ class TestSphericalExpansion(TestCase):
     def test_jit(self):
         from spex.spherical_expansion import SphericalExpansion
 
-        exp = SphericalExpansion()
-        exp = torch.jit.script(exp)
+        for radial in [
+            {
+                "LaplacianEigenstates": {
+                    "cutoff": 5.0,
+                    "max_radial": 20,
+                    "max_angular": 3,
+                    "trim": False,
+                }
+            },
+            {
+                "Bernstein": {
+                    "cutoff": 5.0,
+                    "num_radial": 20,
+                    "max_angular": 3,
+                }
+            },
+        ]:
+            exp = SphericalExpansion(radial=radial)
+            exp = torch.jit.script(exp)
 
-        R_ij = torch.randn((6, 3))
-        i = torch.tensor([0, 0, 1, 1, 2, 2])
-        j = torch.tensor([1, 2, 0, 2, 0, 1])
-        species = torch.tensor([8, 8, 64])
+            R_ij = torch.randn((6, 3))
+            i = torch.tensor([0, 0, 1, 1, 2, 2])
+            j = torch.tensor([1, 2, 0, 2, 0, 1])
+            species = torch.tensor([8, 8, 64])
 
-        exp(R_ij, i, j, species)
+            exp(R_ij, i, j, species)
 
     def test_different_backends(self):
         from spex.spherical_expansion import SphericalExpansion

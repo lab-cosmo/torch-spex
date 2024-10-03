@@ -1,0 +1,100 @@
+import numpy as np
+
+from functools import cache
+
+import scipy as sp
+from scipy.special import spherical_jn as j_l
+
+from .trimmed_and_splined import TrimmedAndSplined
+
+
+class LaplacianEigenstates(TrimmedAndSplined):
+    def __init__(
+        self,
+        cutoff,
+        max_radial=10,
+        max_angular=None,
+        max_eigenvalue=None,
+        n_per_l=None,
+        trim=True,
+        spliner_accuracy=1e-8,
+        normalize=True,
+    ):
+        super().__init__(
+            cutoff,
+            max_radial,
+            max_angular,
+            max_eigenvalue,
+            n_per_l,
+            trim,
+            spliner_accuracy,
+            normalize,
+        )
+
+    def compute_eigenvalues(self, cutoff, max_l, max_n):
+
+        zeros_ln = compute_zeros(max_l, max_n)
+        eigenvalues_ln = zeros_ln**2 / cutoff**2
+
+        return eigenvalues_ln
+
+    def get_basis_functions(
+        self, cutoff, normalize=True
+    ):
+        # We don't bother with the full equations from doi:10.1063/5.0124363,
+        # instead just defining: R_nl(x) ∝ j_l(z_nl x/cutoff) ,
+        # where j_l are spherical Bessel functions, and z_nl are their zeroes.
+        #
+        # We don't deal with the other prefactors because we numerically normalise.
+        # This is equivalent to computing N_nl (Eq. A2) and dividing by cutoff**-3/2 ;
+        # which you can see by substituting the variables in the integral
+        # ∫[0, cutoff] dr r**2 R_nl(r)**2 ) to x = z_nl r / cutoff .
+
+        n_per_l = self.n_per_l
+        max_n, max_l = max(n_per_l), len(n_per_l) + 1
+        zeros_ln = compute_zeros(max_l, max_n)
+
+        @cache
+        def normalization_factor(n, l):
+            if normalize:
+                integrand = lambda r: r**2 * j_l(l, zeros_ln[l, n] * r / cutoff) ** 2
+                integral, _ = sp.integrate.quad(integrand, 0.0, cutoff)
+                return integral ** (-1 / 2)
+            else:
+                return 1.0
+
+        def R(x, n, l):
+            return normalization_factor(n, l) * j_l(l, zeros_ln[l, n] * x / cutoff)
+
+        def dR(x, n, l):
+            return (
+                normalization_factor(n, l)
+                * j_l(l, zeros_ln[l, n] * x / cutoff, derivative=True)  # outer derivative
+                * (zeros_ln[l, n] / cutoff)  # inner derivative
+            )
+
+        return R, dR
+
+
+def compute_zeros(max_angular: int, max_radial: int) -> np.ndarray:
+    # taken directly from rascaline, who took it from
+    # https://scipy-cookbook.readthedocs.io/items/SphericalBesselZeros.html
+    # here we "correct" the max_radial/max_angular discrepancy and
+    # treat both as inclusive rather than exclusive
+
+    def Jn(r: float, n: int) -> float:
+        return np.sqrt(np.pi / (2 * r)) * sp.special.jv(n + 0.5, r)
+
+    def Jn_zeros(n: int, nt: int) -> np.ndarray:
+        zeros_j = np.zeros((n + 1, nt), dtype=np.float64)
+        zeros_j[0] = np.arange(1, nt + 1) * np.pi
+        points = np.arange(1, nt + n + 1) * np.pi
+        roots = np.zeros(nt + n, dtype=np.float64)
+        for i in range(1, n + 1):
+            for j in range(nt + n - i):
+                roots[j] = sp.optimize.brentq(Jn, points[j], points[j + 1], (i,))
+            points = roots
+            zeros_j[i][:nt] = roots[:nt]
+        return zeros_j
+
+    return Jn_zeros(max_angular, max_radial + 1)

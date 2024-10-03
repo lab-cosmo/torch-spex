@@ -1,21 +1,4 @@
-from specable import Interface
-
-specable = Interface("spex", "modules")
-
-from_dict = specable.from_dict
-
-# unusual order is to avoid problems if modules require from_dict
-from .angular import SphericalHarmonics
-from .radial import LaplacianEigenstates
-from .species import Alchemical, Orthogonal
+from .engine import from_dict, load, read_yaml, save, to_dict, write_yaml
 from .spherical_expansion import SphericalExpansion
 
-modules = [
-    SphericalHarmonics,
-    LaplacianEigenstates,
-    Orthogonal,
-    Alchemical,
-    SphericalExpansion,
-]
-
-__all__ = modules + [from_dict]
+__all__ = [SphericalExpansion, save, load, from_dict, to_dict, read_yaml, write_yaml]

@@ -7,10 +7,16 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.7"
-specable = ">=0.1.1"
+numpy = "*"
+PyYAML = "*"
+scipy = "*"
 physical_basis = "==1.0.0"
+pytest = {version = "*", optional = true}
+ruff = {version = "*", optional = true}
+ase = {version = "*", optional = true}
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.extras]
+dev = ["pytest", "ruff", "ase"]
 
 [build-system]
 requires = ["poetry-core"]

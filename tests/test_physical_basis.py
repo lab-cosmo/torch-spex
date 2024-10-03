@@ -96,7 +96,9 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
 
                 assert torch.allclose(reference, ours)
 
-                reference = self.reference_basis_torch.compute_derivative(n, l, self.r_torch)
+                reference = self.reference_basis_torch.compute_derivative(
+                    n, l, self.r_torch
+                )
                 ours = our_derivatives[:, n + l * (self.max_radial + 1)]
 
                 assert torch.allclose(reference, ours)

@@ -2,10 +2,11 @@ import torch
 from torch.nn import Module
 
 from spex import from_dict
-from spex.engine import Specable
+
+from .utils import compute_distance
 
 
-class SphericalExpansion(Module, Specable):
+class SphericalExpansion(Module):
     """SphericalExpansion.
 
     Computes spherical expansions for neighbourhoods of atoms, embedding the
@@ -22,6 +23,7 @@ class SphericalExpansion(Module, Specable):
         },
         angular="SphericalHarmonics",
         species={"Alchemical": {"pseudo_species": 4}},
+        cutoff_function={"ShiftedCosine": {"width": 0.5}},
     ):
         """Initialise SphericalExpansion.
 
@@ -40,17 +42,26 @@ class SphericalExpansion(Module, Specable):
             "radial": radial,
             "angular": angular,
             "species": species,
+            "cutoff_function": cutoff_function,
         }
 
-        # we can't rely on knowing max_angular head of time, so we need to
-        # first instantiate the radial expansion and then check what we're dealing with
-        self.radial = from_dict(radial)
+        # instantiate the radial expansion and then check what we're dealing with
+        self.radial = from_dict(radial, module="spex.radial")
 
         self.max_angular = self.radial.max_angular
-        # todo: consider making this more modular somehow
-        self.angular = from_dict({angular: {"max_angular": self.max_angular}})
+        self.cutoff = self.radial.cutoff
 
-        self.species = from_dict(species)
+        self.angular = from_dict(
+            {angular: {"max_angular": self.max_angular}}, module="spex.angular"
+        )
+
+        self.species = from_dict(species, module="spex.species")
+        self.cutoff_fn = from_dict(cutoff_function, module="spex.radial.cutoff")
+
+        self.shape = tuple(
+            (m, int(self.radial.n_per_l[l]), self.species.species.shape[0])
+            for l, m in enumerate(self.angular.m_per_l)
+        )
 
     def forward(self, R_ij, i, j, species):
         """Compute spherical expansion.
@@ -79,46 +90,40 @@ class SphericalExpansion(Module, Specable):
         # j: [pair]
         # species: [center]
 
-        # todo: consider making this more safe for very small or very large inputs
-        r_ij = torch.sqrt((R_ij**2).sum(dim=-1))
+        r_ij = compute_distance(R_ij)  # -> [pair]
         Z_j = species[j]
 
         # pairwise expansions
-        radial_ij = self.radial(r_ij)  # -> [pair, l_and_n]
-        angular_ij = self.angular(R_ij)  # -> [pair, l_and_m]
+        radial_ij = self.radial(r_ij)  # -> [[pair, l=0 n], [pair, l=1 n], ...]
+        cutoff_ij = self.cutoff_fn(r_ij, self.cutoff)  # -> [pair]
+        angular_ij = self.angular(R_ij)  # -> [[pair, l=0 m=0], [pair, l=1 m=-1, ...] ...]
         species_ij = self.species(Z_j)  # -> [pair, species]
 
-        # ... split into tuples per l
-        radial_ij = radial_ij.split(
-            self.radial.n_per_l, dim=-1
-        )  # -> ([pair, l=0 n...], [pair, l=1 n...], ...)
-        angular_ij = angular_ij.split(
-            self.angular.m_per_l, dim=-1
-        )  # -> ([pair, l=0 m...], [pair, l=1 m...], ...)
+        # apply cutoff
+        radial_ij = [r * cutoff_ij.unsqueeze(-1) for r in radial_ij]
 
         # note: can't use tuples or return generators because jit cannot infer their shape
-        # ... outer products
-        radial_and_angular_ij = list(
+        # perform outer products
+        radial_and_angular_ij = [
             torch.einsum("pn,pm->pmn", r, s) for r, s in zip(radial_ij, angular_ij)
-        )  # -> [[pair, l=0 m,n], [pair, l=1 m,n], ...]
-
-        full_expansion_ij = list(
+        ]  # -> [[pair, l=0 m,n], [pair, l=1 m,n], ...]
+        full_expansion_ij = [
             torch.einsum("pln,pc->plnc", ra, species_ij) for ra in radial_and_angular_ij
-        )  # -> [[pair, l=0 m,n,c], [pair, l=1 m,n,c], ...]
+        ]  # -> [[pair, l=0 m,n,c], [pair, l=1 m,n,c], ...]
 
         # aggregation over pairs
         #  note: scatter_add wouldn't work:
         #  it expects the index and source arrays to have the same shape,
         #  while index_add broadcasts across all the non-indexed dims
-        full_expansion = list(
-            (
-                torch.zeros(
-                    (species.shape[0], e.shape[1], e.shape[2], e.shape[3]),
-                    dtype=e.dtype,
-                    device=e.device,
-                )
+        #  note: we also can't extract this into a general function because torchscript
+        #        is unable to infer varying shapes for the outputs
+        full_expansion = [
+            torch.zeros(
+                (species.shape[0], e.shape[1], e.shape[2], e.shape[3]),
+                dtype=e.dtype,
+                device=e.device,
             ).index_add_(0, i, e)
             for e in full_expansion_ij
-        )  # -> [[i, l=0 m,n,c], [i, l=1 m,n,c], ...]
+        ]  # -> [[i, l=0 m,n,c], [i, l=1 m,n,c], ...]
 
         return full_expansion  # -> [[i, l=0 m,n,c], [i, l=1 m,n,c], ...]
