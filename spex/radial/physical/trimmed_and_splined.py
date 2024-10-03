@@ -148,8 +148,8 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
 
             return [max_radial + 1] * (max_angular + 1)
 
-        max_n = 100
-        max_l = 100
+        max_n = 50
+        max_l = 50
 
         eigenvalues_ln = self.compute_eigenvalues(cutoff, max_l, max_n)
 

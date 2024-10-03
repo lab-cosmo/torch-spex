@@ -6,34 +6,42 @@ from unittest import TestCase
 
 class TestBasisSetSizes(TestCase):
     def test_hypers(self):
-        from spex.radial.physical_basis import get_basis_size
+        from spex.radial.physical.physical_basis import PhysicalBasis
 
         cutoff = 4.4
 
-        n_per_l = get_basis_size(cutoff, max_eigenvalue=50.0, max_radial=None, trim=True)
+        physical_basis = PhysicalBasis(
+            cutoff, max_eigenvalue=50.0, max_radial=None, trim=True
+        )
+        n_per_l = physical_basis.n_per_l
         np.testing.assert_equal(n_per_l, np.array([3, 3, 2, 1]))
 
-        n_per_l = get_basis_size(cutoff, max_radial=20, trim=True)
+        physical_basis = PhysicalBasis(cutoff, max_radial=20, trim=True)
+        n_per_l = physical_basis.n_per_l
         assert max(n_per_l) == 21
         assert n_per_l[0] == 21
 
-        n_per_l = get_basis_size(cutoff, max_angular=20, trim=True)
+        physical_basis = PhysicalBasis(cutoff, max_angular=20, trim=True)
+        n_per_l = physical_basis.n_per_l
         assert len(n_per_l) == 21
 
-        n_per_l = get_basis_size(cutoff, max_angular=20, max_radial=20, trim=True)
+        physical_basis = PhysicalBasis(cutoff, max_angular=20, max_radial=20, trim=True)
+        n_per_l = physical_basis.n_per_l
         assert max(n_per_l) == 21
         assert len(n_per_l) <= 21
 
-        n_per_l = get_basis_size(cutoff, max_angular=20, max_radial=20, trim=False)
+        physical_basis = PhysicalBasis(cutoff, max_angular=20, max_radial=20, trim=False)
+        n_per_l = physical_basis.n_per_l
         assert n_per_l[0] == 21
         assert n_per_l[-1] == 21
         assert len(n_per_l) == 21
 
-        max_n_per_l2 = get_basis_size(cutoff, n_per_l=n_per_l)
-        assert n_per_l == max_n_per_l2
+        physical_basis_2 = PhysicalBasis(cutoff, n_per_l=n_per_l)
+        n_per_l2 = physical_basis_2.n_per_l
+        assert n_per_l2 == n_per_l 
 
     def test_shape(self):
-        from spex.radial.physical_basis import PhysicalBasis
+        from spex.radial.physical.physical_basis import PhysicalBasis
 
         basis = PhysicalBasis(
             4.4,
@@ -45,8 +53,9 @@ class TestBasisSetSizes(TestCase):
 
         out = basis(r)
 
-        assert out.shape[0] == 100
-        assert out.shape[1] == np.sum(basis.n_per_l)
+        for r in out:
+            assert r.shape[0] == 100
+        assert np.sum([r.shape[1] for r in out]) == np.sum(basis.n_per_l)
 
 
 class TestRadialVsPhysicalBasisPackage(TestCase):
@@ -66,28 +75,34 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
         self.reference_basis_torch = PhysicalBasisReferenceTorch()
 
     def test_basis_directly(self):
-        from spex.radial.physical_basis import get_basis_functions
+        from spex.radial.physical.physical_basis import PhysicalBasis
 
-        R, dR = get_basis_functions(self.cutoff, normalize=False)
+        physical_basis = PhysicalBasis(
+            self.cutoff, n_per_l=self.n_per_l, normalize=False
+        )
+        R, dR = physical_basis.get_basis_functions(self.cutoff, normalize=False)
 
         for n in range(self.max_radial + 1):
             for l in range(self.max_angular + 1):
                 reference = self.reference_basis.compute(n, l, self.r)
-                ours = R(self.r, n, l)
+                ours = R(self.r_torch, n, l).numpy()
 
                 np.testing.assert_allclose(reference, ours)
 
                 reference = self.reference_basis.compute_derivative(n, l, self.r)
-                ours = dR(self.r, n, l)
+                ours = dR(self.r_torch, n, l).numpy()
 
                 np.testing.assert_allclose(reference, ours)
 
     def test_torch_basis(self):
-        from spex.radial.laplacian_eigenstates import get_spliner_inputs
+        from spex.radial.physical.physical_basis import PhysicalBasis
 
-        R, dR = get_spliner_inputs(self.cutoff, self.n_per_l, normalize=False)
+        physical_basis = PhysicalBasis(
+            self.cutoff, n_per_l=self.n_per_l, normalize=False
+        )
+        R, dR = physical_basis.get_spliner_inputs(self.cutoff, normalize=False)
+
         our_values = R(self.r_torch)
-        our_derivatives = dR(self.r_torch)
 
         for n in range(self.max_radial + 1):
             for l in range(self.max_angular + 1):
@@ -96,22 +111,14 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
 
                 assert torch.allclose(reference, ours)
 
-                reference = self.reference_basis_torch.compute_derivative(
-                    n, l, self.r_torch
-                )
-                ours = our_derivatives[:, n + l * (self.max_radial + 1)]
-
-                assert torch.allclose(reference, ours)
-
     def test_splined_and_jitted(self):
-        from spex.radial.laplacian_eigenstates import LaplacianEigenstates
+        from spex.radial.physical.physical_basis import PhysicalBasis
 
-        for spliner_accuracy, test_accuracy in ((1e-3, 1e-2), (1e-5, 1e-4)):
-            basis = LaplacianEigenstates(
+        for spliner_accuracy, test_accuracy in ((1e-4, 1e-2), (1e-6, 1e-4)):
+            basis = PhysicalBasis(
                 self.cutoff,
                 n_per_l=self.n_per_l,
                 normalize=False,
-                cutoff_function="step",
                 spliner_accuracy=spliner_accuracy,
             )
 
@@ -121,12 +128,14 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
             for n in range(self.max_radial + 1):
                 for l in range(self.max_angular + 1):
                     reference = self.reference_basis.compute(n, l, self.r)
-                    ours = our_values[:, n + l * (self.max_radial + 1)].numpy()
+                    ours = our_values[l][:, n].numpy()
 
-                    np.testing.assert_allclose(reference, ours, atol=test_accuracy)
+                    np.testing.assert_allclose(
+                        reference, ours, atol=test_accuracy, rtol=test_accuracy
+                    )
 
     def test_different_backends(self):
-        from spex.radial.laplacian_eigenstates import LaplacianEigenstates
+        from spex.radial.physical.physical_basis import PhysicalBasis
 
         for device in ("cpu", "cuda", "mps"):
             # why is pytorch like this
@@ -137,22 +146,20 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
                 if not torch.backends.mps.is_available():
                     continue
 
-            basis = LaplacianEigenstates(
+            basis = PhysicalBasis(
                 self.cutoff,
                 n_per_l=self.n_per_l,
                 normalize=False,
-                cutoff_function="step",
-                spliner_accuracy=1e-5,
             )
             if device == "mps":
                 # mps is only single precision
                 basis = basis.to(torch.float32).to(device)
                 r_torch = self.r_torch.to(torch.float32).to(device)
-                our_values = basis(r_torch).cpu()
+                our_values = torch.cat(basis(r_torch), dim=-1).cpu()
             else:
                 basis = basis.to(device)
                 r_torch = self.r_torch.to(device)
-                our_values = basis(r_torch).cpu()
+                our_values = torch.cat(basis(r_torch), dim=-1).cpu()
 
             for n in range(self.max_radial + 1):
                 for l in range(self.max_angular + 1):

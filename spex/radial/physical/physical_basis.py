@@ -1,6 +1,7 @@
 import numpy as np
 
 from physical_basis import PhysicalBasis as _PhysicalBasis
+import torch
 
 from .trimmed_and_splined import TrimmedAndSplined
 
@@ -8,18 +9,30 @@ from .trimmed_and_splined import TrimmedAndSplined
 class PhysicalBasis(TrimmedAndSplined):
     """
     """
-
-    def __init__(self, cutoff, n_per_l=None, normalize=True, spliner_accuracy=1e-8):
+    def __init__(
+        self,
+        cutoff,
+        max_radial=10,
+        max_angular=None,
+        max_eigenvalue=None,
+        n_per_l=None,
+        trim=True,
+        spliner_accuracy=1e-8,
+        normalize=True,
+    ):
         super().__init__(
             cutoff,
-            n_per_l=n_per_l,
-            normalize=normalize,
-            spliner_accuracy=spliner_accuracy,
+            max_radial,
+            max_angular,
+            max_eigenvalue,
+            n_per_l,
+            trim,
+            spliner_accuracy,
+            normalize,
         )
-        self.physical_basis = _PhysicalBasis()
 
     def compute_eigenvalues(self, cutoff, max_l, max_n):
-        eigenvalues = self.physical_basis.E_ln
+        eigenvalues = _PhysicalBasis().E_ln
 
         assert eigenvalues.shape[0] >= max_l
         assert eigenvalues.shape[1] >= max_n
@@ -32,19 +45,25 @@ class PhysicalBasis(TrimmedAndSplined):
     ):
 
         def R(x, n, l):
-            ret = self.physical_basis.compute(n, l, x)
+            device, dtype = x.device, x.dtype
+            x = x.numpy()
+            ret = _PhysicalBasis().compute(n, l, x)
             if normalize:
                 # normalize by square root of sphere volume,
                 # excluding sqrt(4pi) which is included in the SH
                 ret *= np.sqrt((1 / 3) * cutoff**3)
+            ret = torch.tensor(ret, device=device, dtype=dtype)
             return ret
 
         def dR(x, n, l):
-            ret = self.physical_basis.compute_derivative(n, l, x)
+            device, dtype = x.device, x.dtype
+            x = x.numpy()
+            ret = _PhysicalBasis().compute_derivative(n, l, x)
             if normalize:
                 # normalize by square root of sphere volume
                 # excluding sqrt(4pi) which is included in the SH
                 ret *= np.sqrt((1 / 3) * cutoff**3)
+            ret = torch.tensor(ret, device=device, dtype=dtype)
             return ret
 
         return R, dR
