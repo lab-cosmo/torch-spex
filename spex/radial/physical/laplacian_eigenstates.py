@@ -9,6 +9,25 @@ from .trimmed_and_splined import TrimmedAndSplined
 
 
 class LaplacianEigenstates(TrimmedAndSplined):
+    """
+    (Splined) Laplacian Eigenstate Basis.
+
+    Implements the Laplacian eigenstate basis from Bigi et al., doi:10.1063/5.0124363,
+    which is composed of spherical Bessel functions and then splined. These functions
+    arise as solutions (eigenstates) of the Schrödinger equation with ``H = -∇**2``,
+    subject to vanishing boundary conditions at ``|x| = cutoff``.
+
+    This defines radial basis functions that depend on the angular channel ``l``,
+    and there is a "basis trimming" feature that reduces the number of basis functions
+    for high ``l`` (based on the associated eigenvalue). This is exposed in the hyper-
+    parameter selection as ``trim=True``, which then tries to respect ``max_radial``
+    and ``max_angular`` to produce an "optimal" basis within those constraints. If
+    ``trim=False`` is selected, a "rectangular" basis of size
+    ``[max_radial + 1, max_angular + 1]`` is produced. For a further explanation,
+    see https://luthaf.fr/rascaline/latest/how-to/le-basis.html.
+
+    This class inherits most of its functionality from ``TrimmedAndSplined``.
+    """
     def __init__(
         self,
         cutoff,
@@ -32,8 +51,21 @@ class LaplacianEigenstates(TrimmedAndSplined):
         )
 
     def compute_eigenvalues(self, cutoff, max_l, max_n):
+        """
+        Compute the eigenvalues for the Laplacian eigenstates basis,
+        as required by the ``TrimmedAndSplined`` class.
 
-        zeros_ln = compute_zeros(max_l, max_n)
+        Args:
+            cutoff (float): Cutoff radius.
+            max_l (int): Maximum angular channel.
+            max_n (int): Maximum radial channel.
+
+        Returns:
+            np.ndarray: Eigenvalues for the Laplacian eigenstates basis
+            as a 2D array with shape ``(max_l, max_n)``.
+        """
+
+        zeros_ln = _compute_zeros(max_l, max_n)
         eigenvalues_ln = zeros_ln**2 / cutoff**2
 
         return eigenvalues_ln
@@ -41,6 +73,10 @@ class LaplacianEigenstates(TrimmedAndSplined):
     def get_basis_functions(
         self, cutoff, normalize=True
     ):
+        """
+        Returns functions that compute the radial basis functions and their derivatives
+        for the Laplacian eigenstates basis.
+        """
         # We don't bother with the full equations from doi:10.1063/5.0124363,
         # instead just defining: R_nl(x) ∝ j_l(z_nl x/cutoff) ,
         # where j_l are spherical Bessel functions, and z_nl are their zeroes.
@@ -52,7 +88,7 @@ class LaplacianEigenstates(TrimmedAndSplined):
 
         n_per_l = self.n_per_l
         max_n, max_l = max(n_per_l), len(n_per_l) + 1
-        zeros_ln = compute_zeros(max_l, max_n)
+        zeros_ln = _compute_zeros(max_l, max_n)
 
         @cache
         def normalization_factor(n, l):
@@ -76,7 +112,7 @@ class LaplacianEigenstates(TrimmedAndSplined):
         return R, dR
 
 
-def compute_zeros(max_angular: int, max_radial: int) -> np.ndarray:
+def _compute_zeros(max_angular: int, max_radial: int) -> np.ndarray:
     # taken directly from rascaline, who took it from
     # https://scipy-cookbook.readthedocs.io/items/SphericalBesselZeros.html
     # here we "correct" the max_radial/max_angular discrepancy and

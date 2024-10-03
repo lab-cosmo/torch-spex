@@ -17,17 +17,13 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
 
     Besides a spliner, this class supports the trimming of basis functions based on
     a ranking of the basis functions, here named "eigenvalues". The lower the eigenvalue,
-    the more "important" the basis function is.
+    the more "important" the basis function is. For such bases, often the number of basis
+    functions for each angular channel is not constant, but decreases with increasing
+    angular momentum ``l``.
 
     Derived classes must implement the ``compute_eigenvalues`` and ``get_basis_functions``
-    methods.
-
-    Inputs are expected to be a one-dimensional ``Tensor`` of distances.
-
-    Outputs are always given in a two-dimensional ``Tensor``; all basis functions are
-    flattened across one dimension and arranged in blocks of increasing ``l``. The
-    ``n_per_l`` attribute of instances of this class provides the sizes required for
-    ``torch.split`` to obtain features per ``l``.
+    methods. The first provides a ranking of basis functions, the second provides their
+    functional form.
 
     Attributes:
         n_per_l (list): Number of basis functions for each angular channel ``l``.
@@ -107,6 +103,13 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
 
     def forward(self, r):
         """Compute the radial expansion.
+
+        Inputs are expected to be a one-dimensional ``Tensor`` of distances.
+
+        Outputs are always given in a two-dimensional ``Tensor``; all basis functions are
+        flattened across one dimension and arranged in blocks of increasing ``l``. The
+        ``n_per_l`` attribute of instances of this class provides the sizes required for
+        ``torch.split`` to obtain features per ``l``.
 
         Args:
             r (Tensor): Input distances of shape ``[pair]``.
@@ -233,17 +236,22 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
     def compute_eigenvalues(self, cutoff, max_l, max_n) -> np.ndarray:
         """
         This method should return the eigenvalues for the basis functions
-        as a 2D array of shape (max_l, max_n). Currently, it 
+        as a 2D array of shape (max_l, max_n). Currently, it is always
+        called with max_l=50 and max_n=50.
         """
         pass
 
     @abstractmethod
     def get_basis_functions(
             self, cutoff, normalize=True
-        ) -> Tuple[Callable[[float, int, int], float], Callable[[float, int, int], float]]:
+        ) -> Tuple[
+            Callable[[torch.Tensor, int, int], torch.Tensor], 
+            Callable[[torch.Tensor, int, int], torch.Tensor]
+        ]:
         """
         This should return two functions, R and dR, that compute the basis functions
         and their derivatives, respectively. The functions should be callable in the
-        form ``R(x, n, l)`` and ``dR(x, n, l)``.
+        form ``R(x, n, l)`` and ``dR(x, n, l)``. Floating point inputs and outputs of
+        these functions should be torch tensors.
         """
         pass

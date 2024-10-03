@@ -1,13 +1,29 @@
 import numpy as np
+import torch
 
 from physical_basis import PhysicalBasis as _PhysicalBasis
-import torch
 
 from .trimmed_and_splined import TrimmedAndSplined
 
 
 class PhysicalBasis(TrimmedAndSplined):
     """
+    (Splined) Physical Radial Basis.
+
+    Implements a "physical" radial basis, which is a radial basis that can be
+    obtained by solving a physically motivated differential equation. This is
+    implemented in the ``physical_basis`` package which this class wraps and
+    depends on.
+
+    This defines radial basis functions that depend on the angular channel ``l``,
+    and there is a "basis trimming" feature that reduces the number of basis functions
+    for high ``l`` (based on the associated eigenvalue). This is exposed in the hyper-
+    parameter selection as ``trim=True``, which then tries to respect ``max_radial``
+    and ``max_angular`` to produce an "optimal" basis within those constraints. If
+    ``trim=False`` is selected, a "rectangular" basis of size
+    ``[max_radial + 1, max_angular + 1]`` is produced.
+
+    This class inherits most of its functionality from ``TrimmedAndSplined``.
     """
     def __init__(
         self,
@@ -32,6 +48,20 @@ class PhysicalBasis(TrimmedAndSplined):
         )
 
     def compute_eigenvalues(self, cutoff, max_l, max_n):
+        """
+        Compute the eigenvalues for the physical basis,
+        as required by the ``TrimmedAndSplined`` class.
+
+        Args:
+            cutoff (float): Cutoff radius.
+            max_l (int): Maximum angular channel.
+            max_n (int): Maximum radial channel.
+
+        Returns:
+            np.ndarray: Eigenvalues for the physical basis as a 2D array
+                with shape ``(max_l, max_n)``.
+        """
+
         eigenvalues = _PhysicalBasis().E_ln
 
         assert eigenvalues.shape[0] >= max_l
@@ -43,6 +73,12 @@ class PhysicalBasis(TrimmedAndSplined):
     def get_basis_functions(
         self, cutoff, normalize=True
     ):
+        """
+        Returns functions that compute the radial basis functions and their derivatives
+        for the Laplacian eigenstates basis.
+        """
+        # The normalization here is geometric. It assumes that the basis functions
+        # vanish (or almost vanish) at the cutoff radius.
 
         def R(x, n, l):
             device, dtype = x.device, x.dtype
