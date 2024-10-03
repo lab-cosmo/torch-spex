@@ -1,15 +1,11 @@
 import numpy as np
 import torch
 
-from abc import ABC, abstractmethod
-from typing import Callable, Tuple
-
 from .spliner import DynamicSpliner
 
 
-class TrimmedAndSplined(torch.nn.Module, ABC):
-    """
-    A base class for trimmed and splined basis functions.
+class TrimmedAndSplined(torch.nn.Module):
+    """Base class for trimmed and splined basis functions.
 
     When implementing a radial expansion, it is often useful to spline the basis
     functions, as this is generally more efficient, even for basis functions that
@@ -40,7 +36,7 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
         spliner_accuracy=1e-8,
         normalize=True,
     ):
-        """Initialize the trimmed and splined basis.
+        """Initialize a trimmed and splined basis.
 
         If ``trim=False``, nothing complicated happens and there is a constant number of
         basis functions for each ``l``. The basis is therefore "rectangular" in shape:
@@ -71,10 +67,10 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
 
         # if the user specified nothing, we go with max_radial=10
         if (
-            max_radial is None and
-            max_angular is None and
-            max_eigenvalue is None and
-            n_per_l is None
+            max_radial is None
+            and max_angular is None
+            and max_eigenvalue is None
+            and n_per_l is None
         ):
             max_radial = 10
 
@@ -109,6 +105,22 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
         R, dR = self.get_spliner_inputs(cutoff, normalize=normalize)
 
         self.spliner = DynamicSpliner(cutoff, R, dR, accuracy=spliner_accuracy)
+
+    # -- to be implemented in subclass --
+
+    def compute_eigenvalues(self, cutoff, max_l, max_n):
+        # This method should return the eigenvalues for the basis functions
+        # as a 2D array of shape (max_l, max_n). Currently, it is always
+        # called with max_l=50 and max_n=50.
+        raise NotImplementedError
+
+    def get_basis_functions(self, cutoff, normalize=True):
+        # This should return two functions, R and dR, that compute the basis functions
+        # and their derivatives, respectively. The functions should be callable in the
+        # form R(x, n, l) and dR(x, n, l) and return tensors.
+        raise NotImplementedError
+
+    # -- actual work --
 
     def forward(self, r):
         """Compute the radial expansion.
@@ -192,7 +204,7 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
 
                 # ... then we restrict further
                 n_per_l = self.trim_basis(max_eigenvalue, eigenvalues_ln)
-                return n_per_l[:max_angular+1]
+                return n_per_l[: max_angular + 1]
 
         else:
             assert max_radial is None
@@ -200,7 +212,6 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
             assert max_eigenvalue <= eigenvalues_ln.max()
 
             return self.trim_basis(max_eigenvalue, eigenvalues_ln)
-
 
     def trim_basis(self, max_eigenvalue, eigenvalues_ln):
         # retain only basis functions with eigenvalue <= max_eigenvalue
@@ -240,27 +251,3 @@ class TrimmedAndSplined(torch.nn.Module, ABC):
             return torch.stack(derivatives).T
 
         return values_fn, derivatives_fn
-
-    @abstractmethod
-    def compute_eigenvalues(self, cutoff, max_l, max_n) -> np.ndarray:
-        """
-        This method should return the eigenvalues for the basis functions
-        as a 2D array of shape (max_l, max_n). Currently, it is always
-        called with max_l=50 and max_n=50.
-        """
-        pass
-
-    @abstractmethod
-    def get_basis_functions(
-            self, cutoff, normalize=True
-        ) -> Tuple[
-            Callable[[torch.Tensor, int, int], torch.Tensor], 
-            Callable[[torch.Tensor, int, int], torch.Tensor]
-        ]:
-        """
-        This should return two functions, R and dR, that compute the basis functions
-        and their derivatives, respectively. The functions should be callable in the
-        form ``R(x, n, l)`` and ``dR(x, n, l)``. Floating point inputs and outputs of
-        these functions should be torch tensors.
-        """
-        pass

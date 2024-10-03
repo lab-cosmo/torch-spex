@@ -14,8 +14,7 @@ from .trimmed_and_splined import TrimmedAndSplined
 
 
 class PhysicalBasis(TrimmedAndSplined):
-    """
-    (Splined) Physical Radial Basis.
+    """(Splined) Physical Radial Basis.
 
     Implements a "physical" radial basis, which is a radial basis that can be
     obtained by solving a physically motivated differential equation. This is
@@ -29,46 +28,9 @@ class PhysicalBasis(TrimmedAndSplined):
     and ``max_angular`` to produce an "optimal" basis within those constraints. If
     ``trim=False`` is selected, a "rectangular" basis of size
     ``[max_radial + 1, max_angular + 1]`` is produced.
-
-    This class inherits most of its functionality from ``TrimmedAndSplined``.
     """
-    def __init__(
-        self,
-        cutoff,
-        max_radial=None,
-        max_angular=None,
-        max_eigenvalue=None,
-        n_per_l=None,
-        trim=True,
-        spliner_accuracy=1e-8,
-        normalize=True,
-    ):
-        super().__init__(
-            cutoff,
-            max_radial,
-            max_angular,
-            max_eigenvalue,
-            n_per_l,
-            trim,
-            spliner_accuracy,
-            normalize,
-        )
 
     def compute_eigenvalues(self, cutoff, max_l, max_n):
-        """
-        Compute the eigenvalues for the physical basis,
-        as required by the ``TrimmedAndSplined`` class.
-
-        Args:
-            cutoff (float): Cutoff radius.
-            max_l (int): Maximum angular channel.
-            max_n (int): Maximum radial channel.
-
-        Returns:
-            np.ndarray: Eigenvalues for the physical basis as a 2D array
-                with shape ``(max_l, max_n)``.
-        """
-
         eigenvalues = _PhysicalBasis().E_ln
 
         assert eigenvalues.shape[0] >= max_l
@@ -76,14 +38,7 @@ class PhysicalBasis(TrimmedAndSplined):
 
         return eigenvalues[:max_l, :max_n]
 
-
-    def get_basis_functions(
-        self, cutoff, normalize=True
-    ):
-        """
-        Returns functions that compute the radial basis functions and their derivatives
-        for the Laplacian eigenstates basis.
-        """
+    def get_basis_functions(self, cutoff, normalize=True):
         # The normalization here is geometric. It assumes that the basis functions
         # vanish (or almost vanish) at the cutoff radius.
 

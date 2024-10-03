@@ -38,7 +38,7 @@ class TestBasisSetSizes(TestCase):
 
         physical_basis_2 = PhysicalBasis(cutoff, n_per_l=n_per_l)
         n_per_l2 = physical_basis_2.n_per_l
-        assert n_per_l2 == n_per_l 
+        assert n_per_l2 == n_per_l
 
     def test_shape(self):
         from spex.radial.physical.physical_basis import PhysicalBasis
@@ -77,9 +77,7 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
     def test_basis_directly(self):
         from spex.radial.physical.physical_basis import PhysicalBasis
 
-        physical_basis = PhysicalBasis(
-            self.cutoff, n_per_l=self.n_per_l, normalize=False
-        )
+        physical_basis = PhysicalBasis(self.cutoff, n_per_l=self.n_per_l, normalize=False)
         R, dR = physical_basis.get_basis_functions(self.cutoff, normalize=False)
 
         for n in range(self.max_radial + 1):
@@ -97,9 +95,7 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
     def test_torch_basis(self):
         from spex.radial.physical.physical_basis import PhysicalBasis
 
-        physical_basis = PhysicalBasis(
-            self.cutoff, n_per_l=self.n_per_l, normalize=False
-        )
+        physical_basis = PhysicalBasis(self.cutoff, n_per_l=self.n_per_l, normalize=False)
         R, dR = physical_basis.get_spliner_inputs(self.cutoff, normalize=False)
 
         our_values = R(self.r_torch)

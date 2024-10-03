@@ -79,9 +79,7 @@ class TestRadialVsRascaline(TestCase):
     def test_basis_directly(self):
         from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
 
-        le = LaplacianEigenstates(
-            self.cutoff, n_per_l=self.n_per_l, normalize=False
-        )
+        le = LaplacianEigenstates(self.cutoff, n_per_l=self.n_per_l, normalize=False)
         R, dR = le.get_basis_functions(self.cutoff, normalize=False)
 
         for n in range(self.max_radial + 1):
@@ -99,11 +97,9 @@ class TestRadialVsRascaline(TestCase):
     def test_torch_basis(self):
         from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
 
-        le = LaplacianEigenstates(
-            self.cutoff, n_per_l=self.n_per_l, normalize=False
-        )
+        le = LaplacianEigenstates(self.cutoff, n_per_l=self.n_per_l, normalize=False)
         R, dR = le.get_spliner_inputs(self.cutoff, normalize=False)
-        
+
         our_values = R(self.r_torch)
         our_derivatives = dR(self.r_torch)
 

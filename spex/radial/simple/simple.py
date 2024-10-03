@@ -78,6 +78,22 @@ class Simple(torch.nn.Module):
                 [NoOp() for _ in range(self.max_angular + 1)]
             )
 
+    # -- to be implemented in sublass --
+
+    def expand(self, r):
+        """Compute the "raw" radial basis.
+
+        Args:
+            r (Tensor): Input distances of shape ``[pair]``.
+
+        Returns:
+            Expansion as a tensor of shape ``[pair, num_basis]``.
+        """
+
+        raise NotImplementedError
+
+    # -- actual work --
+
     def forward(self, r):
         """Compute the radial basis.
 
@@ -92,18 +108,6 @@ class Simple(torch.nn.Module):
         expansions = [transform(expansion) for transform in self.transforms]
 
         return expansions
-
-    def expand(self, r):
-        """Compute the "raw" radial basis.
-
-        Args:
-            r (Tensor): Input distances of shape ``[pair]``.
-
-        Returns:
-            Expansion as a tensor of shape ``[pair, num_basis]``.
-        """
-
-        raise NotImplementedError
 
 
 class NoOp(torch.nn.Module):

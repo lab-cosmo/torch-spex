@@ -32,3 +32,7 @@ pip install -e .[dev]
 ## Development
 
 `spex` uses `ruff` for formatting. Please use the [pre-commit hook](https://pre-commit.com) to make sure that any contributions are formatted correctly, or run `ruff format . && ruff check --fix .`.
+
+We generally adhere to the [Google style guidelines](https://google.github.io/styleguide/pyguide.html). Note in particular how docstrings are formatted, and the docstrings are only encouraged for public-facing API, unless required to explain something.
+
+Please review the development readme in `spex/README.md` for further information.
