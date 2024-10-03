@@ -1,7 +1,14 @@
 import numpy as np
 import torch
 
-from physical_basis import PhysicalBasis as _PhysicalBasis
+try:
+    from physical_basis import PhysicalBasis as _PhysicalBasis
+except ImportError:
+    raise ImportError(
+        "The `physical_basis` package is required in order to use the "
+        "physical basis. Please install spex with the `physical` extra "
+        "(e.g., `pip install spex[physical]`)."
+    )
 
 from .trimmed_and_splined import TrimmedAndSplined
 

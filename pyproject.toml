@@ -10,13 +10,14 @@ python = ">=3.7"
 numpy = "*"
 PyYAML = "*"
 scipy = "*"
-physical_basis = "==1.0.0"
+physical_basis = {version = "==1.0.0", optional = true}
 pytest = {version = "*", optional = true}
 ruff = {version = "*", optional = true}
 ase = {version = "*", optional = true}
 
 [tool.poetry.extras]
-dev = ["pytest", "ruff", "ase"]
+dev = ["pytest", "ruff", "ase", "physical_basis"]
+physical = ["physical_basis"]
 
 [build-system]
 requires = ["poetry-core"]
