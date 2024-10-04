@@ -20,7 +20,6 @@ class DynamicSpliner(Module):
     Inputs outside ``[0, cutoff]`` are clipped into that interval.
 
     Heavily inspired by the corresponding code in ``rascaline``.
-
     """
 
     def __init__(
@@ -28,7 +27,7 @@ class DynamicSpliner(Module):
         cutoff,
         values_fn,
         derivatives_fn,
-        accuracy=1e-3,
+        accuracy=1e-8,
     ):
         """Initialise a DynamicSpliner.
 

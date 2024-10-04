@@ -11,6 +11,7 @@ We keep the overall design decision of return a list features per degree, rather
 These expansions are based on the solutions of the Laplace equation on the sphere, with or without some additional smoothness constraints. They are built with a varying basis size per degree in mind, reducing the number of basis functions for higher spherical harmonics degrees. These bases are splined for efficiency.
 
 - `LaplacianEigenstates`: Eigenfunctions of the Laplace equation on the sphere.
+- `PhysicalBasis`: Eigenfunctions of an exponentially scaled Laplace operator on the sphere.
 - ...
 
 ### "Simple" expansions
