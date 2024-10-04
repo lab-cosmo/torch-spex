@@ -28,10 +28,51 @@ class PhysicalBasis(TrimmedAndSplined):
     and ``max_angular`` to produce an "optimal" basis within those constraints. If
     ``trim=False`` is selected, a "rectangular" basis of size
     ``[max_radial + 1, max_angular + 1]`` is produced.
+
+    The physical basis has a lengthscale parameter which represents the lengthscale
+    of the short-range interactions in the physical system. In the current
+    implementation, this parameter is set to 1 (in the units provided by the user).
     """
 
+    def __init__(
+        self,
+        cutoff,
+        max_radial=None,
+        max_angular=None,
+        max_eigenvalue=None,
+        n_per_l=None,
+        trim=True,
+        spliner_accuracy=1e-8,
+        normalize=True,
+    ):
+        """
+        Initializes a physical basis instance.
+
+        All arguments are passed to the base class, ``TrimmedAndSplined``.
+        Cutoffs larger than 10 are not supported at the moment.
+        """
+        # this needs to be initialized before super().__init__(), as
+        # it is used in the two derived functions that are called by it
+        self.physical_basis = _PhysicalBasis()
+
+        if cutoff > 10.0:
+            # the ``physical_basis`` package does not support
+            # r/lengthscale > 10.0
+            raise ValueError("The physical basis cannot be used for cutoff > 10.0.")
+
+        super().__init__(
+            cutoff=cutoff,
+            max_radial=max_radial,
+            max_angular=max_angular,
+            max_eigenvalue=max_eigenvalue,
+            n_per_l=n_per_l,
+            trim=trim,
+            spliner_accuracy=spliner_accuracy,
+            normalize=normalize,
+        )
+
     def compute_eigenvalues(self, cutoff, max_l, max_n):
-        eigenvalues = _PhysicalBasis().E_ln
+        eigenvalues = self.physical_basis.E_ln
 
         assert eigenvalues.shape[0] >= max_l
         assert eigenvalues.shape[1] >= max_n
@@ -45,7 +86,7 @@ class PhysicalBasis(TrimmedAndSplined):
         def R(x, n, l):
             device, dtype = x.device, x.dtype
             x = x.numpy()
-            ret = _PhysicalBasis().compute(n, l, x)
+            ret = self.physical_basis.compute(n, l, x)
             if normalize:
                 # normalize by square root of sphere volume,
                 # excluding sqrt(4pi) which is included in the SH
@@ -56,7 +97,7 @@ class PhysicalBasis(TrimmedAndSplined):
         def dR(x, n, l):
             device, dtype = x.device, x.dtype
             x = x.numpy()
-            ret = _PhysicalBasis().compute_derivative(n, l, x)
+            ret = self.physical_basis.compute_derivative(n, l, x)
             if normalize:
                 # normalize by square root of sphere volume
                 # excluding sqrt(4pi) which is included in the SH
