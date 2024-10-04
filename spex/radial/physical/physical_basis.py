@@ -1,15 +1,6 @@
 import numpy as np
 import torch
 
-try:
-    from physical_basis import PhysicalBasis as _PhysicalBasis
-except ImportError:
-    raise ImportError(
-        "The `physical_basis` package is required in order to use the "
-        "physical basis. Please install spex with the `physical` extra "
-        "(e.g., `pip install spex[physical]`)."
-    )
-
 from .trimmed_and_splined import TrimmedAndSplined
 
 
@@ -29,46 +20,40 @@ class PhysicalBasis(TrimmedAndSplined):
     ``trim=False`` is selected, a "rectangular" basis of size
     ``[max_radial + 1, max_angular + 1]`` is produced.
 
-    The physical basis has a lengthscale parameter which represents the lengthscale
-    of the short-range interactions in the physical system. In the current
-    implementation, this parameter is set to 1 (in the units provided by the user).
+    The physical basis has a ``lengthscale`` parameter, which is used to scale the
+    inputs before computing the basis, which is defined on the interval ``[0,10]``.
+    In the current implementation, this parameter is set to 1.
     """
 
     def __init__(
         self,
         cutoff,
-        max_radial=None,
-        max_angular=None,
-        max_eigenvalue=None,
-        n_per_l=None,
-        trim=True,
-        spliner_accuracy=1e-8,
-        normalize=True,
+        **kwargs,
     ):
-        """
-        Initializes a physical basis instance.
+        """Initializes a physical basis instance.
 
-        All arguments are passed to the base class, ``TrimmedAndSplined``.
-        Cutoffs larger than 10 are not supported at the moment.
-        """
-        # this needs to be initialized before super().__init__(), as
-        # it is used in the two derived functions that are called by it
-        self.physical_basis = _PhysicalBasis()
+        Note that ``cutoff<=10`` is required, as the physical basis is only
+        defined up to ``r/lengthscale=10``, and currently ``lengthscale=1``.
+
+        See ``TrimmedAndSpline`` for details."""
 
         if cutoff > 10.0:
-            # the ``physical_basis`` package does not support
-            # r/lengthscale > 10.0
             raise ValueError("The physical basis cannot be used for cutoff > 10.0.")
 
+        try:
+            from physical_basis import PhysicalBasis
+
+            self.physical_basis = PhysicalBasis()
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
+                "The physical_basis package is required in order to use "
+                "PhysicalBasis. Please install spex with the physical extra "
+                "(e.g., pip install spex[physical])."
+            )
+
         super().__init__(
-            cutoff=cutoff,
-            max_radial=max_radial,
-            max_angular=max_angular,
-            max_eigenvalue=max_eigenvalue,
-            n_per_l=n_per_l,
-            trim=trim,
-            spliner_accuracy=spliner_accuracy,
-            normalize=normalize,
+            cutoff,
+            **kwargs,
         )
 
     def compute_eigenvalues(self, cutoff, max_l, max_n):
