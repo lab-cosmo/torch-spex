@@ -17,9 +17,9 @@ class SphericalExpansion(Module):
 
     def __init__(
         self,
-        radial={
-            "LaplacianEigenstates": {"cutoff": 5.0, "max_radial": 20, "max_angular": 4}
-        },
+        cutoff,
+        max_angular=3,
+        radial={"LaplacianEigenstates": {"max_radial": 20}},
         angular="SphericalHarmonics",
         species={"Alchemical": {"pseudo_species": 4}},
         cutoff_function={"ShiftedCosine": {"width": 0.5}},
@@ -39,7 +39,7 @@ class SphericalExpansion(Module):
         super().__init__()
 
         self.calculator = torchSphericalExpansion(
-            radial=radial, angular=angular, species=species
+            cutoff, max_angular=max_angular, radial=radial, angular=angular, species=species
         )
         self.spec = self.calculator.spec
 

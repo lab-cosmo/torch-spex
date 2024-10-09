@@ -2,6 +2,7 @@ import torch
 from torch.nn import Module
 
 from spex import from_dict
+from spex.engine.dicts import update_dict
 
 from .utils import compute_distance
 
@@ -14,49 +15,72 @@ class SphericalExpansion(Module):
     neighbour atomic species. The embeddings are then aggregated, i.e., summed
     over the neighbours to generate per-atom features.
 
+    Attributes:
+        cutoff (float): Cutoff radius.
+        max_angular (int): Maximum spherical harmonics degree.
+        shape (tuple): Shape of the output tensor per spherical harmonics degree,
+            excluding the leading "pair" dimension. Contains the number of spherical
+            channels ``m``, then the number of radial channels ``n``, and finally
+            the number of species channels ``c``, in that order.
+
     """
 
     def __init__(
         self,
-        radial={
-            "LaplacianEigenstates": {"cutoff": 5.0, "max_radial": 20, "max_angular": 4}
-        },
+        cutoff,
+        max_angular=3,
+        radial={"LaplacianEigenstates": {"max_radial": 20}},
         angular="SphericalHarmonics",
         species={"Alchemical": {"pseudo_species": 4}},
         cutoff_function={"ShiftedCosine": {"width": 0.5}},
     ):
         """Initialise SphericalExpansion.
 
-        Arguments are expected in the form of ``specable``-style dictionaries, i.e.,
+        Arguments for the radial, angular, and species expansions are expected
+        in the form of ``specable``-style dictionaries, i.e.,
         ``{ClassName: {key1: value1, key2: value2, ...}}``.
 
+        Values for ``cutoff`` and ``max_angular`` will be passed to the radial
+        and angular expansions, and will overwrite any values specified within.
+
         Args:
+            cutoff (float): Cutoff radius.
+            max_angular (int): Maximum spherical harmonics degree.
             radial (dict): Radial expansion specification.
-            angular (str): Type of angular expansion.
-                (Currently only "SphericalHarmonics" is supported.)
+            angular (str): Type of angular expansion
+                ("SphericalHarmonics", "SolidHarmonics" are supported).
             species (dict): Species embedding specification.
+            cutoff_function (dict): Cutoff function specification.
+                ("ShiftedCosine" and "Step" are supported, however, it is not
+                recommended to use a step function cutoff, as it leads to
+                discontinuities in the potential energy surface!).
 
         """
         super().__init__()
         self.spec = {
+            "cutoff": cutoff,
+            "max_angular": max_angular,
             "radial": radial,
             "angular": angular,
             "species": species,
             "cutoff_function": cutoff_function,
         }
 
-        # instantiate the radial expansion and then check what we're dealing with
+        self.cutoff = cutoff
+        self.max_angular = max_angular
+
+        radial = update_dict(
+            radial, {"cutoff": self.cutoff, "max_angular": self.max_angular}
+        )
         self.radial = from_dict(radial, module="spex.radial")
 
-        self.max_angular = self.radial.max_angular
-        self.cutoff = self.radial.cutoff
-
-        self.angular = from_dict(
-            {angular: {"max_angular": self.max_angular}}, module="spex.angular"
-        )
+        angular = update_dict(angular, {"max_angular": self.max_angular})
+        self.angular = from_dict(angular, module="spex.angular")
 
         self.species = from_dict(species, module="spex.species")
-        self.cutoff_fn = from_dict(cutoff_function, module="spex.radial.cutoff")
+
+        cutoff_function = update_dict(cutoff_function, {"cutoff": self.cutoff})
+        self.cutoff_fn = from_dict(cutoff_function, module="spex.cutoff")
 
         self.shape = tuple(
             (m, int(self.radial.n_per_l[l]), self.species.species.shape[0])
@@ -95,7 +119,7 @@ class SphericalExpansion(Module):
 
         # pairwise expansions
         radial_ij = self.radial(r_ij)  # -> [[pair, l=0 n], [pair, l=1 n], ...]
-        cutoff_ij = self.cutoff_fn(r_ij, self.cutoff)  # -> [pair]
+        cutoff_ij = self.cutoff_fn(r_ij)  # -> [pair]
         angular_ij = self.angular(R_ij)  # -> [[pair, l=0 m=0], [pair, l=1 m=-1, ...] ...]
         species_ij = self.species(Z_j)  # -> [pair, species]
 

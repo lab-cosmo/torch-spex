@@ -14,6 +14,7 @@ The spec dictionary format is:
 """
 
 from collections.abc import Mapping
+from copy import deepcopy
 
 
 def to_dict(handle, payload):
@@ -42,3 +43,13 @@ def parse_dict(dct, allow_stubs=False):
     inner = dct[handle]
 
     return handle, inner
+
+
+def update_dict(dct, updates, allow_stubs=True):
+    # update the inner part of dct
+    dct = deepcopy(dct)
+    handle, inner = parse_dict(dct, allow_stubs=allow_stubs)
+
+    inner = {**inner, **updates}
+
+    return {handle: inner}
