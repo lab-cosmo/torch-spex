@@ -5,7 +5,7 @@ from collections import namedtuple
 Graph = namedtuple("Graph", ("R_ij", "i", "j", "species"))
 
 
-def to_graph(atoms, cutoff, dtype=torch.float32):
+def to_graph_ase(atoms, cutoff, dtype=torch.float32):
     from ase.neighborlist import neighbor_list
 
     i, j, D = neighbor_list(
@@ -20,6 +20,24 @@ def to_graph(atoms, cutoff, dtype=torch.float32):
         torch.tensor(species, dtype=torch.int),
     )
 
+
+def to_graph(atoms, cutoff, dtype=torch.float32):
+    from vesin import NeighborList
+
+    i, j, D = NeighborList(cutoff, full_list=True).compute(
+        points=atoms.positions,
+        box=atoms.cell.array,
+        periodic=all(atoms.pbc),
+        quantities="ijD",
+    )
+    species = atoms.get_atomic_numbers().astype(int)
+
+    return Graph(
+        torch.tensor(D).to(dtype),
+        torch.tensor(i, dtype=torch.int),
+        torch.tensor(j, dtype=torch.int),
+        torch.tensor(species, dtype=torch.int),
+    )
 
 def combine_graphs(graphs):
     num_nodes = torch.tensor([g.species.shape[0] for g in graphs])
