@@ -3,21 +3,21 @@ import torch
 
 
 class ShiftedCosine(torch.nn.Module):
-    def __init__(self, width=0.5):
+    def __init__(self, cutoff, width=0.5):
         super().__init__()
 
-        self.spec = {"width": width}
+        self.spec = {"cutoff": cutoff, "width": width}
 
         self.cutoff_fn = torch.jit.trace(
-            shifted_cosine(width=width), example_inputs=(torch.zeros(3), torch.tensor(1.0))
+            shifted_cosine(cutoff, width=width), example_inputs=torch.zeros(3)
         )
 
-    def forward(self, r, cutoff):
-        return self.cutoff_fn(r, cutoff)
+    def forward(self, r):
+        return self.cutoff_fn(r)
 
 
-def shifted_cosine(width=0.5):
-    def fn(r, cutoff):
+def shifted_cosine(cutoff, width=0.5):
+    def fn(r):
         onset = cutoff - width
         ones = torch.ones_like(r)
 

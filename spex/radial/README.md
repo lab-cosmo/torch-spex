@@ -12,31 +12,31 @@ These expansions are based on the solutions of the Laplace equation on the spher
 
 - `LaplacianEigenstates`: Eigenfunctions of the Laplace equation on the sphere.
 - `PhysicalBasis`: Eigenfunctions of an exponentially scaled Laplace operator on the sphere.
-- ...
 
 ### "Simple" expansions
 
 These are simply expansions in some well-known function bases, with the optional ability to learn an additional linear transformation (even per degree) of the resulting features.
 
 - `Bernstein`: Bernstein polynomials
-- ...
+- ... (more to come)
 
 ## Interface
 
-This defines the minimum requirements to implement a radial basis that works with the rest of `spex`.
+This defines the minimum requirements to implement a radial basis that works with the rest of `spex`, in particular with `spex.SphericalExpansion`.
 
 Radial expansions must have the following attributes:
 
-- `cutoff`: Cutoff radius *as a `torch` buffer*.
-- `max_angular`: Number of spherical harmonics degrees.
 - `n_per_l`: Number of features per degree.
+- `cutoff`: Torch buffer with the cutoff radius.
+- `max_angular`: Integer, maximum degree and equal to `len(n_per_l) + 1`.
 
-It is important that all of these are present, because the radial basis acts as the single source of truth for the overall spherical harmonics degree `max_angular` and the `cutoff` radius, and we need shape information for model building.
+The `forward` function must accept:
 
-The `forward` function must accept a single tensor with distances of size `pair`, and returns a list of features per degree, with each having the shape `[pair, self.n_per_l[l]]`.
+- Single tensor with distances of size `pair`, and returning a list of features per degree, with each having the shape `[pair, self.n_per_l[l]]`.
 
-The `__init__` function must accept at least the `cutoff` argument, and `max_angular` and `n_per_l` must always be set during `__init__`. Some bases, like `LaplacianEigenstates` decide these things based on other hypers.
+The `__init__` function must accept:
 
-## Cutoff functions
+- `cutoff`: a `float` argument.
+- `max_angular`: an `int | None` keyword argument.
 
-In addition to expanding distances, we also need to have a way to smoothly push pairwise contributions to zero to ensure that the resulting potential energy surface is smoothly differentiable. This is the role of "cutoff functions", which are exposed in `spex.radial.cutoff`. We do *not* automatically multiply cutoff functions to the radial basis for conceptual clarity, and to support cases where the radial basis is processed further downstream before pairwise summation.
+If `max_angular is not None`, the radial basis *must* guarantee that `len(self.n_per_l) == max_angular + 1`. If `max_angular` is not set, it can do whatever it wants, but this usecase will not be supported by `spex.SphericalExpansion`, which passes a fixed `max_angular` at `__init__`.

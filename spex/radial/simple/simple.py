@@ -23,8 +23,8 @@ class Simple(torch.nn.Module):
     def __init__(
         self,
         cutoff,
-        num_radial=128,
         max_angular=3,
+        num_radial=128,
         trainable=False,
         per_degree=False,
         num_features=None,
@@ -34,8 +34,8 @@ class Simple(torch.nn.Module):
 
         self.spec = {
             "cutoff": cutoff,
-            "num_radial": num_radial,
             "max_angular": max_angular,
+            "num_radial": num_radial,
             "trainable": trainable,
             "per_degree": per_degree,
             "num_features": num_features,
@@ -54,7 +54,7 @@ class Simple(torch.nn.Module):
         self.num_radial = num_radial
 
         # public interface
-        self.register_buffer("cutoff", torch.tensor(cutoff))
+        self.cutoff = cutoff
         self.max_angular = max_angular
         self.n_per_l = [num_features for _ in range(self.max_angular + 1)]
 

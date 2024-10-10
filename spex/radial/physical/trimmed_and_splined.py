@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 
+import warnings
+
 from .spliner import DynamicSpliner
 
 
@@ -28,8 +30,8 @@ class TrimmedAndSplined(torch.nn.Module):
     def __init__(
         self,
         cutoff,
+        max_angular=3,
         max_radial=None,
-        max_angular=None,
         max_eigenvalue=None,
         n_per_l=None,
         trim=True,
@@ -65,20 +67,11 @@ class TrimmedAndSplined(torch.nn.Module):
         """
         super().__init__()
 
-        # if the user specified nothing, we go with max_radial=10
-        if (
-            max_radial is None
-            and max_angular is None
-            and max_eigenvalue is None
-            and n_per_l is None
-        ):
-            max_radial = 10
-
         # spec
         self.spec = {
             "cutoff": cutoff,
-            "max_radial": max_radial,
             "max_angular": max_angular,
+            "max_radial": max_radial,
             "max_eigenvalue": max_eigenvalue,
             "trim": trim,
             "spliner_accuracy": spliner_accuracy,
@@ -100,7 +93,7 @@ class TrimmedAndSplined(torch.nn.Module):
             trim=trim,
         )
         self.max_angular = len(self.n_per_l) - 1
-        self.register_buffer("cutoff", torch.tensor(cutoff))
+        self.cutoff = cutoff
 
         R, dR = self.get_spliner_inputs(cutoff, normalize=normalize)
 
@@ -155,15 +148,28 @@ class TrimmedAndSplined(torch.nn.Module):
         trim=False,
     ):
         # figures out the basis size given the possible combination of hypers
-        # basically: (a) we just make a rectangular basis (trime=False) or
-        #            (b) we trim based on eigenvalues (which in turn can be set by choosing
-        #                a maximum basis size)
+        # basically: (a) we just make a rectangular basis (trim=False) or
+        #            (b) we trim based on eigenvalues, setting the threshold based
+        #                on respecting max_angular and max_radial (or max_eigenvalue)
         #            (c) we get a premade basis size, in which case we don't do anything.
+        #
+        #            Note: For compatibility with SphericalExpansion, max_angular will
+        #                  always take precedent, if it is not None, n_per_l is guaranteed
+        #                  to have max_angular + 1 entries.
+        #
         # We return: n_per_l = [number of n for l=0, number of n for l=1, ...]
 
         if n_per_l is not None:
-            # work was already done
-            return n_per_l
+            if max_angular is not None:
+                # max_angular takes precedent, but this may be unexpected
+                warnings.warn(
+                    "Trimmed radial expansion got n_per_l and max_angular; "
+                    "max_angular takes precedent."
+                    "To disable this, set max_angular to None."
+                )
+                return n_per_l[: max_angular + 1]
+            else:
+                return n_per_l
 
         if not trim:
             assert max_radial is not None
@@ -196,17 +202,27 @@ class TrimmedAndSplined(torch.nn.Module):
                 return self.trim_basis(max_eigenvalue, eigenvalues_ln)
 
             else:
+                # typical case: max_radial and max_angular are both set
                 assert max_radial <= max_n
                 assert max_angular <= max_l
 
-                # we first make sure that the max_radial at l=0 is within bounds,
+                # we first make sure that we have max_radial at l=0
                 max_eigenvalue = eigenvalues_ln[0, max_radial]
 
                 # ... then we restrict further
                 n_per_l = self.trim_basis(max_eigenvalue, eigenvalues_ln)
-                return n_per_l[: max_angular + 1]
+
+                # ... then we make sure that max_angular is respected,
+                #     padding as needed
+                if len(n_per_l) < (max_angular + 1):
+                    return n_per_l + [1] * (max_angular + 1 - len(n_per_l))
+                elif len(n_per_l) > (max_angular + 1):
+                    return n_per_l[: max_angular + 1]
+                else:
+                    return n_per_l
 
         else:
+            # special case, not expected to be used with SphericalExpansion
             assert max_radial is None
             assert max_angular is None
             assert max_eigenvalue <= eigenvalues_ln.max()
