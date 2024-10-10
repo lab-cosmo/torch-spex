@@ -19,7 +19,7 @@ class SphericalExpansion(Module):
         self,
         cutoff,
         max_angular=3,
-        radial={"LaplacianEigenstates": {"max_radial": 20}},
+        radial={"LaplacianEigenstates": {"max_radial": 8}},
         angular="SphericalHarmonics",
         species={"Alchemical": {"pseudo_species": 4}},
         cutoff_function={"ShiftedCosine": {"width": 0.5}},
