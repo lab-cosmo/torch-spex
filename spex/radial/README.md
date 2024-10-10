@@ -28,7 +28,7 @@ Radial expansions must have the following attributes:
 
 - `n_per_l`: Number of features per degree.
 - `cutoff`: Torch buffer with the cutoff radius.
-- `max_angular`: Integer, maximum degree and equal to `len(n_per_l_ + 1`.
+- `max_angular`: Integer, maximum degree and equal to `len(n_per_l) + 1`.
 
 The `forward` function must accept:
 
