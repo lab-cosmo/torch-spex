@@ -8,7 +8,7 @@ class TestSphericalExpansion(TestCase):
         from spex import from_dict, to_dict
         from spex.spherical_expansion import SphericalExpansion
 
-        exp = SphericalExpansion()
+        exp = SphericalExpansion(5.0)
         from_dict(to_dict(exp))
 
     def test_shapes(self):
@@ -20,11 +20,11 @@ class TestSphericalExpansion(TestCase):
         species = torch.tensor([8, 8, 64])
 
         exp = SphericalExpansion(
+            cutoff=5.0,
+            max_angular=3,
             radial={
                 "LaplacianEigenstates": {
-                    "cutoff": 5.0,
                     "max_radial": 20,
-                    "max_angular": 3,
                     "trim": False,
                 }
             },
@@ -47,21 +47,17 @@ class TestSphericalExpansion(TestCase):
         for radial in [
             {
                 "LaplacianEigenstates": {
-                    "cutoff": 5.0,
                     "max_radial": 20,
-                    "max_angular": 3,
                     "trim": False,
                 }
             },
             {
                 "Bernstein": {
-                    "cutoff": 5.0,
                     "num_radial": 20,
-                    "max_angular": 3,
                 }
             },
         ]:
-            exp = SphericalExpansion(radial=radial)
+            exp = SphericalExpansion(cutoff=5.0, max_angular=3, radial=radial)
             exp = torch.jit.script(exp)
 
             R_ij = torch.randn((6, 3))
@@ -83,7 +79,7 @@ class TestSphericalExpansion(TestCase):
                 # sphericart does not support MPS; skip
                 continue
 
-            exp = SphericalExpansion()
+            exp = SphericalExpansion(5.0)
 
             R_ij = torch.randn((6, 3))
             i = torch.tensor([0, 0, 1, 1, 2, 2])

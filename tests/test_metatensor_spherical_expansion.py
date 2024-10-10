@@ -16,7 +16,7 @@ class TestMetatenorSphericalExpansion(TestCase):
         centers = torch.tensor([0, 1, 2])
         structures = torch.tensor([0, 0, 0])
 
-        exp = SphericalExpansion()
+        exp = SphericalExpansion(5.0)
         exp = torch.jit.script(exp)
 
         exp(R_ij, i, j, species, structures, centers)
@@ -33,7 +33,7 @@ class TestMetatenorSphericalExpansion(TestCase):
                 # sphericart does not support MPS; skip
                 continue
 
-            exp = SphericalExpansion()
+            exp = SphericalExpansion(5.0)
 
             R_ij = torch.randn((6, 3))
             i = torch.tensor([0, 0, 1, 1, 2, 2])
@@ -138,11 +138,11 @@ def get_spex_calculator(cutoff, max_angular, max_radial, species, spliner_accura
     from spex.metatensor.spherical_expansion import SphericalExpansion
 
     return SphericalExpansion(
+        cutoff=cutoff,
+        max_angular=max_angular,
         radial={
             "LaplacianEigenstates": {
-                "cutoff": cutoff,
                 "max_radial": max_radial,
-                "max_angular": max_angular,
                 "trim": False,
                 "spliner_accuracy": spliner_accuracy,
             }

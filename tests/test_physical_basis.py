@@ -11,12 +11,12 @@ class TestBasisSetSizes(TestCase):
         cutoff = 4.4
 
         physical_basis = PhysicalBasis(
-            cutoff, max_eigenvalue=50.0, max_radial=None, trim=True
+            cutoff, max_angular=None, max_eigenvalue=50.0, max_radial=None, trim=True
         )
         n_per_l = physical_basis.n_per_l
         np.testing.assert_equal(n_per_l, np.array([3, 3, 2, 1]))
 
-        physical_basis = PhysicalBasis(cutoff, max_radial=8, trim=True)
+        physical_basis = PhysicalBasis(cutoff, max_angular=None, max_radial=8, trim=True)
         n_per_l = physical_basis.n_per_l
         assert max(n_per_l) == 9
         assert n_per_l[0] == 9
@@ -28,7 +28,7 @@ class TestBasisSetSizes(TestCase):
         physical_basis = PhysicalBasis(cutoff, max_angular=6, max_radial=6, trim=True)
         n_per_l = physical_basis.n_per_l
         assert max(n_per_l) == 7
-        assert len(n_per_l) <= 7
+        assert len(n_per_l) == 7
 
         physical_basis = PhysicalBasis(cutoff, max_angular=6, max_radial=6, trim=False)
         n_per_l = physical_basis.n_per_l
@@ -36,7 +36,7 @@ class TestBasisSetSizes(TestCase):
         assert n_per_l[-1] == 7
         assert len(n_per_l) == 7
 
-        physical_basis_2 = PhysicalBasis(cutoff, n_per_l=n_per_l)
+        physical_basis_2 = PhysicalBasis(cutoff, max_angular=None, n_per_l=n_per_l)
         n_per_l2 = physical_basis_2.n_per_l
         assert n_per_l2 == n_per_l
 
@@ -45,6 +45,7 @@ class TestBasisSetSizes(TestCase):
 
         basis = PhysicalBasis(
             4.4,
+            max_angular=None,
             max_eigenvalue=20,
             max_radial=None,
         )
@@ -77,7 +78,9 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
     def test_basis_directly(self):
         from spex.radial.physical.physical_basis import PhysicalBasis
 
-        physical_basis = PhysicalBasis(self.cutoff, n_per_l=self.n_per_l, normalize=False)
+        physical_basis = PhysicalBasis(
+            self.cutoff, max_angular=None, n_per_l=self.n_per_l, normalize=False
+        )
         R, dR = physical_basis.get_basis_functions(self.cutoff, normalize=False)
 
         for n in range(self.max_radial + 1):
@@ -95,7 +98,9 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
     def test_torch_basis(self):
         from spex.radial.physical.physical_basis import PhysicalBasis
 
-        physical_basis = PhysicalBasis(self.cutoff, n_per_l=self.n_per_l, normalize=False)
+        physical_basis = PhysicalBasis(
+            self.cutoff, max_angular=None, n_per_l=self.n_per_l, normalize=False
+        )
         R, dR = physical_basis.get_spliner_inputs(self.cutoff, normalize=False)
 
         our_values = R(self.r_torch)
@@ -113,6 +118,7 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
         for spliner_accuracy, test_accuracy in ((1e-4, 1e-2), (1e-6, 1e-4)):
             basis = PhysicalBasis(
                 self.cutoff,
+                max_angular=None,
                 n_per_l=self.n_per_l,
                 normalize=False,
                 spliner_accuracy=spliner_accuracy,
@@ -144,6 +150,7 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
 
             basis = PhysicalBasis(
                 self.cutoff,
+                max_angular=None,
                 n_per_l=self.n_per_l,
                 normalize=False,
             )

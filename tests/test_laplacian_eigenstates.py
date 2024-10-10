@@ -12,12 +12,14 @@ class TestBasisSetSizes(TestCase):
         # numbers from https://luthaf.fr/rascaline/latest/how-to/le-basis.html
         cutoff = 4.4
 
-        le = LaplacianEigenstates(cutoff, max_eigenvalue=20, max_radial=None, trim=True)
+        le = LaplacianEigenstates(
+            cutoff, max_angular=None, max_eigenvalue=20, max_radial=None, trim=True
+        )
         n_per_l = le.n_per_l
         assert n_per_l[0] == 6
         assert np.sum(n_per_l) == 44
 
-        le = LaplacianEigenstates(cutoff, max_radial=20, trim=True)
+        le = LaplacianEigenstates(cutoff, max_angular=None, max_radial=20, trim=True)
         n_per_l = le.n_per_l
         assert max(n_per_l) == 21
         assert n_per_l[0] == 21
@@ -29,7 +31,12 @@ class TestBasisSetSizes(TestCase):
         le = LaplacianEigenstates(cutoff, max_angular=20, max_radial=20, trim=True)
         n_per_l = le.n_per_l
         assert max(n_per_l) == 21
-        assert len(n_per_l) <= 21
+        assert len(n_per_l) == 21
+
+        le = LaplacianEigenstates(cutoff, max_angular=4, max_radial=1, trim=True)
+        n_per_l = le.n_per_l
+        assert max(n_per_l) == 2
+        assert len(n_per_l) == 5
 
         le = LaplacianEigenstates(cutoff, max_angular=20, max_radial=20, trim=False)
         n_per_l = le.n_per_l
@@ -37,7 +44,7 @@ class TestBasisSetSizes(TestCase):
         assert n_per_l[-1] == 21
         assert len(n_per_l) == 21
 
-        le_2 = LaplacianEigenstates(cutoff, n_per_l=n_per_l)
+        le_2 = LaplacianEigenstates(cutoff, max_angular=None, n_per_l=n_per_l)
         max_n_per_l2 = le_2.n_per_l
         assert max_n_per_l2 == n_per_l
 
@@ -46,6 +53,7 @@ class TestBasisSetSizes(TestCase):
 
         basis = LaplacianEigenstates(
             4.4,
+            max_angular=None,
             max_eigenvalue=20,
             max_radial=None,
         )
@@ -79,7 +87,9 @@ class TestRadialVsRascaline(TestCase):
     def test_basis_directly(self):
         from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
 
-        le = LaplacianEigenstates(self.cutoff, n_per_l=self.n_per_l, normalize=False)
+        le = LaplacianEigenstates(
+            self.cutoff, max_angular=None, n_per_l=self.n_per_l, normalize=False
+        )
         R, dR = le.get_basis_functions(self.cutoff, normalize=False)
 
         for n in range(self.max_radial + 1):
@@ -97,7 +107,9 @@ class TestRadialVsRascaline(TestCase):
     def test_torch_basis(self):
         from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
 
-        le = LaplacianEigenstates(self.cutoff, n_per_l=self.n_per_l, normalize=False)
+        le = LaplacianEigenstates(
+            self.cutoff, max_angular=None, n_per_l=self.n_per_l, normalize=False
+        )
         R, dR = le.get_spliner_inputs(self.cutoff, normalize=False)
 
         our_values = R(self.r_torch)
@@ -121,6 +133,7 @@ class TestRadialVsRascaline(TestCase):
         for spliner_accuracy, test_accuracy in ((1e-3, 1e-2), (1e-5, 1e-4)):
             basis = LaplacianEigenstates(
                 self.cutoff,
+                max_angular=None,
                 n_per_l=self.n_per_l,
                 normalize=False,
                 spliner_accuracy=spliner_accuracy,
@@ -151,6 +164,7 @@ class TestRadialVsRascaline(TestCase):
 
             basis = LaplacianEigenstates(
                 self.cutoff,
+                max_angular=None,
                 n_per_l=self.n_per_l,
                 normalize=False,
                 spliner_accuracy=1e-8,
