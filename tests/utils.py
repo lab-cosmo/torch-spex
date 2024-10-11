@@ -14,7 +14,7 @@ def to_graph(atoms, cutoff, dtype=torch.float32):
     species = atoms.get_atomic_numbers().astype(int)
 
     return Graph(
-        torch.tensor(D).to(dtype),
+        torch.tensor(D, dtype=dtype),
         torch.tensor(i, dtype=torch.int),
         torch.tensor(j, dtype=torch.int),
         torch.tensor(species, dtype=torch.int),
