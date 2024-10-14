@@ -14,9 +14,10 @@ physical_basis = {version = "==1.0.0", optional = true}
 pytest = {version = "*", optional = true}
 ruff = {version = "*", optional = true}
 ase = {version = "*", optional = true}
+vesin = {version = "*", optional = true}
 
 [tool.poetry.extras]
-dev = ["pytest", "ruff", "ase", "physical_basis"]
+dev = ["pytest", "ruff", "ase", "physical_basis", "vesin"]
 physical = ["physical_basis"]
 
 [build-system]

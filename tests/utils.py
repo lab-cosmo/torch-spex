@@ -6,9 +6,9 @@ Graph = namedtuple("Graph", ("R_ij", "i", "j", "species"))
 
 
 def to_graph(atoms, cutoff, dtype=torch.float32):
-    from ase.neighborlist import neighbor_list
+    from vesin import ase_neighbor_list
 
-    i, j, D = neighbor_list(
+    i, j, D = ase_neighbor_list(
         "ijD", atoms, cutoff
     )  # they follow the R_ij = R_j - R_i convention
     species = atoms.get_atomic_numbers().astype(int)
