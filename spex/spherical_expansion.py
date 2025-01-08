@@ -126,8 +126,8 @@ class SphericalExpansion(Module):
         # apply cutoff
         radial_ij = [r * cutoff_ij.unsqueeze(-1) for r in radial_ij]
 
-        # note: can't use tuples or return generators because jit cannot infer their shape
         # perform outer products
+        # note: can't use tuples or return generators because jit cannot infer their shape
         radial_and_angular_ij = [
             torch.einsum("pn,pm->pmn", r, s) for r, s in zip(radial_ij, angular_ij)
         ]  # -> [[pair, l=0 m,n], [pair, l=1 m,n], ...]
