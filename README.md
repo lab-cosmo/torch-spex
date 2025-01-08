@@ -4,9 +4,10 @@
 
 A spherical expansion is commonly used as the input for machine learning models of molecules and materials, but can, in principle, be used for other tasks related to learning of labelled point clouds. In the language of atomistic ML, a spherical expansion computes a fixed-size representation of the arrangement of atoms $j$ in a neighbourhood around a central atom $i$, based on the vectors connecting $i$ and $j$, $\vec R_{ij}$, and the chemical species labels $Z_j$ (typically the atomic number). It works by expanding the different ingredients as follows:
 
-$$
+```math
 A^{lm}_{nc} = \sum_j C_c(Z_j) \left( R(|\vec R_{ij}|)^l_n S^{lm}(\vec R_{ij}) \right) f_{\text{cut}}(|\vec R_{ij}|)
-$$
+```
+
 where $C_c$ is a function that maps $Z_j$ to some embedding space with index $c$, $R$ is a function that embeds the distance between $i$ and $j$, and $S_{lm}$ is a spherical harmonic, solid harmonic, or other irreducible representation of the rotation group. $f_{\text{cut}}$ is a cutoff function that ensures that pairwise contributions decay to zero at the cutoff radius. The resulting object has four indices, and since there are different numbers of $m$ per $l$, it is returned as a `list` of `torch.Tensor`, with every tensor arranged as $[m, n, c]$ and $l$ indexing the (outer) list. Since we compute everything for whole structures at once, $i$ is an additional, leading, index to the inner tensors. By construction, this object is *equivariant* under rotations and can be further processed in equivariant neural networks, or turned into invariant features for regression.
 
 ***
