@@ -1,0 +1,32 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            python-version: 3.9
+          - os: ubuntu-22.04
+            python-version: 3.12
+          - os: macos-14
+            python-version: 3.12
+          - os: windows-2022
+            python-version: 3.12
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install tox
+      - name: Test the code
+        run: tox -e test
+      
