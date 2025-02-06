@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        # Check all PR
+
+jobs:
+    tests:
+        strategy:
+            matrix:
+                - os: ["ubuntu-22.04", "macos-15", "windows-2025"]
+                - python-version: ["3.12"]
+        runs-on: ${{ matrix.os }}
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Set up python
+              uses: actions/setup-actions@v5
+              with:
+                python-version:  ${{ matrix.python-version }}
+            - run: pip install tox
+            - name: Lint the code
+              run: tox -e tests
+
