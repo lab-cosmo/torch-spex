@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 from .trimmed_and_splined import TrimmedAndSplined
 
@@ -69,25 +68,19 @@ class PhysicalBasis(TrimmedAndSplined):
         # vanish (or almost vanish) at the cutoff radius.
 
         def R(x, n, l):
-            device, dtype = x.device, x.dtype
-            x = x.numpy()
             ret = self.physical_basis.compute(n, l, x)
             if normalize:
                 # normalize by square root of sphere volume,
                 # excluding sqrt(4pi) which is included in the SH
                 ret *= np.sqrt((1 / 3) * cutoff**3)
-            ret = torch.tensor(ret, device=device, dtype=dtype)
             return ret
 
         def dR(x, n, l):
-            device, dtype = x.device, x.dtype
-            x = x.numpy()
             ret = self.physical_basis.compute_derivative(n, l, x)
             if normalize:
                 # normalize by square root of sphere volume
                 # excluding sqrt(4pi) which is included in the SH
                 ret *= np.sqrt((1 / 3) * cutoff**3)
-            ret = torch.tensor(ret, device=device, dtype=dtype)
             return ret
 
         return R, dR

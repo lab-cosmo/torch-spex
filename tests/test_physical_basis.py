@@ -62,7 +62,6 @@ class TestBasisSetSizes(TestCase):
 class TestRadialVsPhysicalBasisPackage(TestCase):
     def setUp(self):
         from physical_basis import PhysicalBasis as PhysicalBasisReference
-        from physical_basis.torch import PhysicalBasis as PhysicalBasisReferenceTorch
 
         self.cutoff = 4.4
         self.max_angular = 12
@@ -73,7 +72,6 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
         self.r_torch = torch.tensor(self.r)
 
         self.reference_basis = PhysicalBasisReference()
-        self.reference_basis_torch = PhysicalBasisReferenceTorch()
 
     def test_basis_directly(self):
         from spex.radial.physical.physical_basis import PhysicalBasis
@@ -86,31 +84,14 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
         for n in range(self.max_radial + 1):
             for l in range(self.max_angular + 1):
                 reference = self.reference_basis.compute(n, l, self.r)
-                ours = R(self.r_torch, n, l).numpy()
+                ours = R(self.r, n, l)
 
                 np.testing.assert_allclose(reference, ours)
 
                 reference = self.reference_basis.compute_derivative(n, l, self.r)
-                ours = dR(self.r_torch, n, l).numpy()
+                ours = dR(self.r, n, l)
 
                 np.testing.assert_allclose(reference, ours)
-
-    def test_torch_basis(self):
-        from spex.radial.physical.physical_basis import PhysicalBasis
-
-        physical_basis = PhysicalBasis(
-            self.cutoff, max_angular=None, n_per_l=self.n_per_l, normalize=False
-        )
-        R, dR = physical_basis.get_spliner_inputs(self.cutoff, normalize=False)
-
-        our_values = R(self.r_torch)
-
-        for n in range(self.max_radial + 1):
-            for l in range(self.max_angular + 1):
-                reference = self.reference_basis_torch(n, l, self.r_torch)
-                ours = our_values[:, n + l * (self.max_radial + 1)]
-
-                assert torch.allclose(reference, ours)
 
     def test_splined_and_jitted(self):
         from spex.radial.physical.physical_basis import PhysicalBasis
@@ -130,7 +111,7 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
             for n in range(self.max_radial + 1):
                 for l in range(self.max_angular + 1):
                     reference = self.reference_basis.compute(n, l, self.r)
-                    ours = our_values[l][:, n].numpy()
+                    ours = our_values[l][:, n]
 
                     np.testing.assert_allclose(
                         reference, ours, atol=test_accuracy, rtol=test_accuracy

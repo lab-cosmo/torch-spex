@@ -1,8 +1,6 @@
 import torch
 from torch.nn import Module
 
-from typing import List
-
 from metatensor.torch import Labels, TensorBlock, TensorMap
 
 from spex import SphericalExpansion as torchSphericalExpansion
@@ -104,7 +102,7 @@ class SphericalExpansion(Module):
         # l, species_center, species_neighbor ... so, we need to extract
         # the entries for each pair of species (or pseudo-species) at each l
 
-        blocks: List[TensorBlock] = []  # type annotation needed for torchscript
+        blocks: list[TensorBlock] = []  # type annotation needed for torchscript
         for l in l_to_treat:
             for species_center in all_center_species:
                 for i_species_neighbor, species_neighbor in enumerate(all_neighbor_species):

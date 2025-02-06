@@ -67,9 +67,9 @@ class TestBasisSetSizes(TestCase):
         assert np.sum([r.shape[1] for r in out]) == np.sum(basis.n_per_l)
 
 
-class TestRadialVsRascaline(TestCase):
+class TestRadialVsFeatomic(TestCase):
     def setUp(self):
-        from rascaline.utils import SphericalBesselBasis
+        from featomic.basis import SphericalBessel
 
         self.cutoff = 4.4
         self.max_angular = 12
@@ -79,10 +79,15 @@ class TestRadialVsRascaline(TestCase):
         self.r = np.linspace(0, self.cutoff, num=100)
         self.r_torch = torch.tensor(self.r)
 
-        # rascaline insists on being off-by-one in max_radial
-        self.reference_basis = SphericalBesselBasis(
-            self.cutoff, self.max_radial + 1, self.max_angular
-        )
+        self.reference = {}
+        self.d_reference = {}
+
+        for l in range(self.max_angular + 1):
+            reference_basis = SphericalBessel(
+                radius=self.cutoff, max_radial=self.max_radial, angular_channel=l
+            )
+            self.reference[l] = reference_basis.compute(self.r, derivative=False)
+            self.d_reference[l] = reference_basis.compute(self.r, derivative=True)
 
     def test_basis_directly(self):
         from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
@@ -90,42 +95,15 @@ class TestRadialVsRascaline(TestCase):
         le = LaplacianEigenstates(
             self.cutoff, max_angular=None, n_per_l=self.n_per_l, normalize=False
         )
-        R, dR = le.get_basis_functions(self.cutoff, normalize=False)
+        R, dR = le.get_basis_functions(self.cutoff, normalize=True)
 
-        for n in range(self.max_radial + 1):
-            for l in range(self.max_angular + 1):
-                reference = self.reference_basis.compute(n, l, self.r)
+        for l in range(self.max_angular + 1):
+            for n in range(self.max_radial + 1):
                 ours = R(self.r, n, l)
+                np.testing.assert_allclose(self.reference[l][:, n], ours, atol=1e-12)
 
-                np.testing.assert_allclose(reference, ours)
-
-                reference = self.reference_basis.compute_derivative(n, l, self.r)
                 ours = dR(self.r, n, l)
-
-                np.testing.assert_allclose(reference, ours)
-
-    def test_torch_basis(self):
-        from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
-
-        le = LaplacianEigenstates(
-            self.cutoff, max_angular=None, n_per_l=self.n_per_l, normalize=False
-        )
-        R, dR = le.get_spliner_inputs(self.cutoff, normalize=False)
-
-        our_values = R(self.r_torch)
-        our_derivatives = dR(self.r_torch)
-
-        for n in range(self.max_radial + 1):
-            for l in range(self.max_angular + 1):
-                reference = self.reference_basis.compute(n, l, self.r)
-                ours = our_values[:, n + l * (self.max_radial + 1)].numpy()
-
-                np.testing.assert_allclose(reference, ours)
-
-                reference = self.reference_basis.compute_derivative(n, l, self.r)
-                ours = our_derivatives[:, n + l * (self.max_radial + 1)].numpy()
-
-                np.testing.assert_allclose(reference, ours)
+                np.testing.assert_allclose(self.d_reference[l][:, n], ours, atol=1e-12)
 
     def test_splined_and_jitted(self):
         from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
@@ -135,7 +113,7 @@ class TestRadialVsRascaline(TestCase):
                 self.cutoff,
                 max_angular=None,
                 n_per_l=self.n_per_l,
-                normalize=False,
+                normalize=True,
                 spliner_accuracy=spliner_accuracy,
             )
 
@@ -145,10 +123,11 @@ class TestRadialVsRascaline(TestCase):
 
             for n in range(self.max_radial + 1):
                 for l in range(self.max_angular + 1):
-                    reference = self.reference_basis.compute(n, l, self.r)
                     ours = our_values[:, n + l * (self.max_radial + 1)].numpy()
 
-                    np.testing.assert_allclose(reference, ours, atol=test_accuracy)
+                    np.testing.assert_allclose(
+                        self.reference[l][:, n], ours, atol=test_accuracy
+                    )
 
     def test_different_backends(self):
         from spex.radial.physical.laplacian_eigenstates import LaplacianEigenstates
@@ -166,7 +145,7 @@ class TestRadialVsRascaline(TestCase):
                 self.cutoff,
                 max_angular=None,
                 n_per_l=self.n_per_l,
-                normalize=False,
+                normalize=True,
                 spliner_accuracy=1e-8,
             )
             if device == "mps":
@@ -181,7 +160,6 @@ class TestRadialVsRascaline(TestCase):
 
             for n in range(self.max_radial + 1):
                 for l in range(self.max_angular + 1):
-                    reference = self.reference_basis.compute(n, l, self.r)
                     ours = our_values[:, n + l * (self.max_radial + 1)].numpy()
 
-                    np.testing.assert_allclose(reference, ours, atol=1e-4)
+                    np.testing.assert_allclose(self.reference[l][:, n], ours, atol=1e-4)

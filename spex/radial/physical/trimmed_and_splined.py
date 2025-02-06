@@ -256,7 +256,7 @@ class TrimmedAndSplined(torch.nn.Module):
                 for n in range(number_of_n):
                     values.append(R(xs, n, l))
 
-            return torch.stack(values).T
+            return np.stack(values).T
 
         def derivatives_fn(xs):
             derivatives = []
@@ -264,6 +264,6 @@ class TrimmedAndSplined(torch.nn.Module):
                 for n in range(number_of_n):
                     derivatives.append(dR(xs, n, l))
 
-            return torch.stack(derivatives).T
+            return np.stack(derivatives).T
 
         return values_fn, derivatives_fn

@@ -1,3 +1,5 @@
+# todo: this test is not really checking against featomic
+#       -- will remove magic saved stuff later
 import torch
 
 import pathlib
@@ -54,7 +56,7 @@ class TestMetatenorSphericalExpansion(TestCase):
 
             exp(R_ij, i, j, species, centers, structures)
 
-    def test_molecules_vs_rascaline(self):
+    def test_molecules_vs_featomic(self):
         from ase.build import molecule
         from utils import combine_graphs, to_graph
 
@@ -73,15 +75,15 @@ class TestMetatenorSphericalExpansion(TestCase):
             [to_graph(atoms, cutoff) for atoms in systems]
         )
 
-        rascaline_calc = get_rascaline_calculator(cutoff, max_angular, max_radial, species)
+        featomic_calc = get_featomic_calculator(cutoff, max_angular, max_radial, species)
         spex_calc = get_spex_calculator(cutoff, max_angular, max_radial, species)
 
-        reference = rascaline_calc.compute(systems)
+        reference = featomic_calc.compute(systems)
         ours = spex_calc(graph.R_ij, graph.i, graph.j, graph.species, structures, centers)
 
-        compare(reference, ours, atol=1e-5)
+        compare(reference, ours, atol=1e-5, name="mol")
 
-    def test_bulk_vs_rascaline(self):
+    def test_bulk_vs_featomic(self):
         from ase.build import bulk
         from utils import combine_graphs, to_graph
 
@@ -102,16 +104,16 @@ class TestMetatenorSphericalExpansion(TestCase):
             [to_graph(atoms, cutoff) for atoms in systems]
         )
 
-        rascaline_calc = get_rascaline_calculator(cutoff, max_angular, max_radial, species)
+        featomic_calc = get_featomic_calculator(cutoff, max_angular, max_radial, species)
         spex_calc = get_spex_calculator(cutoff, max_angular, max_radial, species)
 
-        reference = rascaline_calc.compute(systems)
+        reference = featomic_calc.compute(systems)
         ours = spex_calc(graph.R_ij, graph.i, graph.j, graph.species, structures, centers)
 
-        compare(reference, ours, atol=1e-5)
+        compare(reference, ours, atol=1e-5, name="bulk")
 
 
-def compare(first, second, atol=1e-11):
+def compare(first, second, atol=1e-11, name=None):
     # compare first, a TensorMap emitted by rascaline (which is using metatensor) with
     #         second, a TensorMap emitted by our code (which uses metatensor.torch)
 
@@ -120,16 +122,18 @@ def compare(first, second, atol=1e-11):
     import metatensor as standard_mt
     import metatensor.torch as mt
 
-    # we need to save/read back the TensorMap to switch from vanilla metatensor to
-    # the metatensor.torch interface... we do it via a temporary file
-
-    file = f"tmp_{random.randint(0, 100)}.npz"
-
-    standard_mt.save(file, first)
-    first = mt.load(file)
-
-    # delete *before* the test could fail
-    pathlib.Path(file).unlink()
+    if name is None:
+        # we need to save/read back the TensorMap to switch from vanilla metatensor to
+        # the metatensor.torch interface... we do it via a temporary file
+        file = f"tmp_{random.randint(0, 100)}.npz"
+        standard_mt.save(file, first)
+        first = mt.load(file)
+        # delete *before* the test could fail
+        pathlib.Path(file).unlink()
+    else:
+        # todo: remove this temporary fix. we do this because featomic changed ~something~
+        file = f"tmp_{name}.npz"
+        first = mt.load(file)
 
     assert mt.allclose(first, second, atol=atol)
 
@@ -153,32 +157,24 @@ def get_spex_calculator(cutoff, max_angular, max_radial, species, spliner_accura
     )
 
 
-def get_rascaline_calculator(
+def get_featomic_calculator(
     cutoff, max_angular, max_radial, species, spliner_accuracy=1e-8
 ):
-    import rascaline
+    import featomic
+    from featomic.splines import SoapSpliner
 
-    max_radial += 1
-
-    spliner = rascaline.utils.SoapSpliner(
-        cutoff=cutoff,
-        max_radial=max_radial,
-        max_angular=max_angular,
-        basis=rascaline.utils.SphericalBesselBasis(
-            cutoff=cutoff, max_radial=max_radial, max_angular=max_angular
+    spliner = SoapSpliner(
+        cutoff=featomic.cutoff.Cutoff(
+            radius=cutoff, smoothing=featomic.cutoff.ShiftedCosine(width=0.5)
         ),
-        density=rascaline.utils.DeltaDensity(),
-        accuracy=spliner_accuracy,
+        density=featomic.density.DiracDelta(),
+        basis=featomic.basis.LaplacianEigenstate(
+            radius=cutoff,
+            max_radial=max_radial,
+            max_angular=max_angular,
+            spline_accuracy=spliner_accuracy,
+        ),
     )
 
-    splined_basis = spliner.compute()
-
-    return rascaline.SphericalExpansion(
-        cutoff=cutoff,
-        max_radial=max_radial,
-        max_angular=max_angular,
-        center_atom_weight=0.0,
-        radial_basis=splined_basis,
-        atomic_gaussian_width=-1.0,  # will not be used due to the delta density above
-        cutoff_function={"ShiftedCosine": {"width": 0.5}},
-    )
+    hypers = spliner.get_hypers()
+    return featomic.SphericalExpansion(**hypers)

@@ -1,7 +1,8 @@
+import numpy as np
 import torch
 from torch.nn import Module
 
-MAX_SPLINE_POINTS = 10_000  # the same as in rascaline
+MAX_SPLINE_POINTS = 10_000  # the same as in featomic
 
 
 class DynamicSpliner(Module):
@@ -19,7 +20,7 @@ class DynamicSpliner(Module):
 
     Inputs outside ``[0, cutoff]`` are clipped into that interval.
 
-    Heavily inspired by the corresponding code in ``rascaline``.
+    Heavily inspired by the corresponding code in ``featomic``.
     """
 
     def __init__(
@@ -55,40 +56,48 @@ class DynamicSpliner(Module):
             n = (n * 2) - 1
             spacing = (cutoff - start) / (n - 1)
 
-            spline_positions = torch.linspace(start, cutoff, n, dtype=torch.float64)
+            spline_positions = np.linspace(start, cutoff, n)
 
             spline_values = values_fn(spline_positions)
             spline_derivatives = derivatives_fn(spline_positions)
-            spline_spacing = torch.tensor(spacing, dtype=torch.float64)
+            spline_spacing = np.array(spacing)
 
-            test_positions = torch.linspace(
-                start + spacing / 2,
-                cutoff - spacing / 2,
-                n - 1,
-                dtype=torch.float64,
+            test_positions = np.linspace(
+                start + spacing / 2, cutoff - spacing / 2, n - 1
             )  # in the middle of spline intervals
 
             actual_values = values_fn(test_positions)
             predicted_values = evaluate_splines(
-                test_positions,
-                spline_spacing,
-                spline_values,
-                spline_derivatives,
-            )
+                torch.tensor(test_positions),
+                torch.tensor(spline_spacing),
+                torch.tensor(spline_values),
+                torch.tensor(spline_derivatives),
+            ).numpy()
 
-            MAE = torch.mean(torch.abs(actual_values - predicted_values))
+            MAE = np.mean(np.abs(actual_values - predicted_values))
 
             if n > MAX_SPLINE_POINTS:
                 raise ValueError(
                     f"Reached maximum number of spline points ({MAX_SPLINE_POINTS})!"
                 )
 
+        spline_values = torch.tensor(spline_values)
+        spline_derivatives = torch.tensor(spline_derivatives)
+        spline_spacing = torch.tensor(spline_spacing)
+
         # we add one extra interval in case we encounter r=cutoff
         spline_values = torch.concat(
-            (spline_values, torch.zeros_like(spline_values[0]).unsqueeze(0)), dim=0
+            (
+                spline_values,
+                torch.zeros_like(spline_values[0]).unsqueeze(0),
+            ),
+            dim=0,
         )
         spline_derivatives = torch.concat(
-            (spline_derivatives, torch.zeros_like(spline_derivatives[0]).unsqueeze(0)),
+            (
+                spline_derivatives,
+                torch.zeros_like(spline_derivatives[0]).unsqueeze(0),
+            ),
             dim=0,
         )
 
