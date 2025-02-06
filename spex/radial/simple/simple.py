@@ -87,7 +87,7 @@ class Simple(torch.nn.Module):
             r (Tensor): Input distances of shape ``[pair]``.
 
         Returns:
-            Expansion as a tensor of shape ``[pair, num_basis]``.
+            Expansion as a tensor of shape ``[pair, num_radial]``.
         """
 
         raise NotImplementedError
