@@ -17,7 +17,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - name: Set up python
-              uses: actions/setup-actions@v5
+              uses: actions/setup-python@v2
               with:
                 python-version:  ${{ matrix.python-version }}
             - run: pip install tox
