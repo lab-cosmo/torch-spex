@@ -48,10 +48,10 @@ cd spex-dev
 pip install -e .
 
 # or (to install pytest, etc)
-pip install -e .[dev]
+pip install -e ".[dev]"
 
 # or (for the physical basis)
-pip install -e .[physical]
+pip install -e ".[physical]"
 ```
 
 You may have to manually install `torch` for your particular setup before doing this.
