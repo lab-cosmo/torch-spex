@@ -29,8 +29,8 @@ class SphericalExpansion(Module):
 
         Args:
             radial (dict): Radial expansion specification.
-            angular (str): Type of angular expansion.
-                (Currently only "SphericalHarmonics" is supported.)
+            angular (str): Type of angular expansion
+                ("SphericalHarmonics", "SolidHarmonics" are supported).
             species (dict): Species embedding specification.
 
         """
