@@ -1,0 +1,18 @@
+name: Lint
+
+on:
+    pull_request:
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v4
+        - name: Set up python
+          uses: actions/setup-actions@v5
+          with:
+            python-version: "3.12"
+        - run: pip install tox
+        - name: Lint the code
+          run: tox -e lint
