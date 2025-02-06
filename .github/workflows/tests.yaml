@@ -21,6 +21,6 @@ jobs:
               with:
                 python-version:  ${{ matrix.python-version }}
             - run: pip install tox
-            - name: Lint the code
+            - name: Run the tests
               run: tox -e tests
 
