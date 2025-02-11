@@ -26,14 +26,11 @@ class TestMetatenorSphericalExpansion(TestCase):
     def test_different_backends(self):
         from spex.metatensor.spherical_expansion import SphericalExpansion
 
-        for device in ("cpu", "cuda", "mps"):
+        for device in ("cpu", "cuda"):
             # why is pytorch like this
             if device == "cuda":
                 if not torch.cuda.is_available():
                     continue
-            if device == "mps":
-                # sphericart does not support MPS; skip
-                continue
 
             exp = SphericalExpansion(5.0)
 
@@ -114,26 +111,19 @@ class TestMetatenorSphericalExpansion(TestCase):
 
 
 def compare(first, second, atol=1e-11, name=None):
-    # compare first, a TensorMap emitted by rascaline (which is using metatensor) with
-    #         second, a TensorMap emitted by our code (which uses metatensor.torch)
-
     import random
 
     import metatensor as standard_mt
     import metatensor.torch as mt
 
     if name is None:
-        # we need to save/read back the TensorMap to switch from vanilla metatensor to
-        # the metatensor.torch interface... we do it via a temporary file
-        file = f"tmp_{random.randint(0, 100)}.npz"
-        standard_mt.save(file, first)
-        first = mt.load(file)
-        # delete *before* the test could fail
-        pathlib.Path(file).unlink()
+        file = pathlib.Path(__file__).parent / f"tmp_{random.randint(0, 100)}.npz"
+        standard_mt.save(str(file), first)
+        first = mt.load(str(file))
+        file.unlink()
     else:
-        # todo: remove this temporary fix. we do this because featomic changed ~something~
-        file = f"tmp_{name}.npz"
-        first = mt.load(file)
+        file = pathlib.Path(__file__).parent / f"tmp_{name}.npz"
+        first = mt.load(str(file))
 
     assert mt.allclose(first, second, atol=atol)
 
