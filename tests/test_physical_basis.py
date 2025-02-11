@@ -126,7 +126,13 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
                 if not torch.cuda.is_available():
                     continue
             if device == "mps":
-                if not torch.backends.mps.is_available():
+                if torch.backends.mps.is_available():
+                    # on macos github runners mps is available but not working; skip
+                    try:
+                        torch.zeros(1, device="mps")
+                    except RuntimeError:
+                        continue
+                else:
                     continue
 
             basis = PhysicalBasis(
