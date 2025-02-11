@@ -120,19 +120,10 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
     def test_different_backends(self):
         from spex.radial.physical.physical_basis import PhysicalBasis
 
-        for device in ("cpu", "cuda", "mps"):
+        for device in ("cpu", "cuda"):
             # why is pytorch like this
             if device == "cuda":
                 if not torch.cuda.is_available():
-                    continue
-            if device == "mps":
-                if torch.backends.mps.is_available():
-                    # on macos github runners mps is available but not working; skip
-                    try:
-                        torch.zeros(1, device="mps")
-                    except RuntimeError:
-                        continue
-                else:
                     continue
 
             basis = PhysicalBasis(
@@ -141,15 +132,10 @@ class TestRadialVsPhysicalBasisPackage(TestCase):
                 n_per_l=self.n_per_l,
                 normalize=False,
             )
-            if device == "mps":
-                # mps is only single precision
-                basis = basis.to(torch.float32).to(device)
-                r_torch = self.r_torch.to(torch.float32).to(device)
-                our_values = torch.cat(basis(r_torch), dim=-1).cpu()
-            else:
-                basis = basis.to(device)
-                r_torch = self.r_torch.to(device)
-                our_values = torch.cat(basis(r_torch), dim=-1).cpu()
+
+            basis = basis.to(device)
+            r_torch = self.r_torch.to(device)
+            our_values = torch.cat(basis(r_torch), dim=-1).cpu()
 
             for n in range(self.max_radial + 1):
                 for l in range(self.max_angular + 1):

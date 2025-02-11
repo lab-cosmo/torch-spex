@@ -70,14 +70,11 @@ class TestSphericalExpansion(TestCase):
     def test_different_backends(self):
         from spex.spherical_expansion import SphericalExpansion
 
-        for device in ("cpu", "cuda", "mps"):
+        for device in ("cpu", "cuda"):
             # why is pytorch like this
             if device == "cuda":
                 if not torch.cuda.is_available():
                     continue
-            if device == "mps":
-                # sphericart does not support MPS; skip
-                continue
 
             exp = SphericalExpansion(5.0)
 
