@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Module
 
-from metatensor import Labels, TensorBlock, TensorMap
+from metatensor.torch import Labels, TensorBlock, TensorMap
 
 from spex import SphericalExpansion
 
@@ -103,17 +103,28 @@ class SoapPowerSpectrum(Module):
         l_to_treat = torch.arange(
             self.calculator.max_angular + 1, dtype=i.dtype, device=i.device
         )
-        properties = torch.tensor(
-            [
-                (ell, n1, n2)
-                for ell in l_to_treat
-                for n1 in range(self.n_per_l[ell])
-                for n2 in range(self.n_per_l[ell])
-            ],
-            dtype=i.dtype,
-            device=i.device,
+
+        # Create the `properties` tensor
+        property_dimension: int = 0
+        for ell in l_to_treat:
+            property_dimension += self.n_per_l[ell] * self.n_per_l[ell]
+
+        # Pre-allocate the tensor with shape (total, 3)
+        properties = torch.empty(
+            (property_dimension, 3), dtype=i.dtype, device=i.device
         )
-        all_center_species = torch.unique(species)
+        idx: int = 0
+
+        # Fill the tensor using explicit nested loops
+        for ell in l_to_treat:
+            for n1 in range(self.n_per_l[ell]):
+                for n2 in range(self.n_per_l[ell]):
+                    properties[idx, 0] = ell
+                    properties[idx, 1] = n1
+                    properties[idx, 2] = n2
+                    idx += 1
+
+        all_center_species = torch.unique(species).to(dtype=i.dtype)
         all_neighbor_species = self.species
 
         # we're trying to match the rascaline output, which has keys for
@@ -121,14 +132,15 @@ class SoapPowerSpectrum(Module):
         # the entries for each pair of species (or pseudo-species) at each l
 
         blocks: list[TensorBlock] = []
-        keys: list[torch.Tensor] = []
         data_: list[torch.Tensor] = []
         for species_center in all_center_species:
             center_mask = species == species_center
-            for i1, species_neighbor_1 in enumerate(all_neighbor_species):
-                for i2, species_neighbor_2 in enumerate(all_neighbor_species):
+            for i1 in range(len(all_neighbor_species)):
+                for i2 in range(len(all_neighbor_species)):
                     data_ = [
-                        output[ell][center_mask][..., i1, i2].reshape(sum(center_mask), -1)
+                        output[ell][center_mask][..., i1, i2].reshape(
+                            sum(center_mask), -1
+                        )
                         for ell in l_to_treat
                     ]
                     data = torch.cat(data_, dim=1)
@@ -146,15 +158,18 @@ class SoapPowerSpectrum(Module):
                             properties=Labels(["l", "n_1", "n_2"], properties),
                         )
                     )
-                    keys.append(
-                        torch.tensor(
-                            [species_center, species_neighbor_1, species_neighbor_2]
-                        )
-                    )
+
+        # torchscript doesn't let us sanely write the keys into a list as we loop,
+        # so we just do it ourselves here. repeat_interleave for outer, repeat for inner
+        print(all_center_species, all_neighbor_species)
+        labels = Labels(
+            ["center_type", "neighbor_1_type", "neighbor_2_type"],
+            torch.cartesian_prod(
+                all_center_species, all_neighbor_species, all_neighbor_species
+            ),
+        )
 
         return TensorMap(
-            Labels(
-                ["center_type", "neighbor_1_type", "neighbor_2_type"], torch.stack(keys)
-            ),
+            labels,
             blocks,
         )
