@@ -110,9 +110,7 @@ class SoapPowerSpectrum(Module):
             property_dimension += self.n_per_l[ell] * self.n_per_l[ell]
 
         # Pre-allocate the tensor with shape (total, 3)
-        properties = torch.empty(
-            (property_dimension, 3), dtype=i.dtype, device=i.device
-        )
+        properties = torch.empty((property_dimension, 3), dtype=i.dtype, device=i.device)
         idx: int = 0
 
         # Fill the tensor using explicit nested loops
@@ -138,9 +136,7 @@ class SoapPowerSpectrum(Module):
             for i1 in range(len(all_neighbor_species)):
                 for i2 in range(len(all_neighbor_species)):
                     data_ = [
-                        output[ell][center_mask][..., i1, i2].reshape(
-                            sum(center_mask), -1
-                        )
+                        output[ell][center_mask][..., i1, i2].reshape(sum(center_mask), -1)
                         for ell in l_to_treat
                     ]
                     data = torch.cat(data_, dim=1)
