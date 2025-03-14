@@ -157,7 +157,6 @@ class SoapPowerSpectrum(Module):
 
         # torchscript doesn't let us sanely write the keys into a list as we loop,
         # so we just do it ourselves here. repeat_interleave for outer, repeat for inner
-        print(all_center_species, all_neighbor_species)
         labels = Labels(
             ["center_type", "neighbor_1_type", "neighbor_2_type"],
             torch.cartesian_prod(
