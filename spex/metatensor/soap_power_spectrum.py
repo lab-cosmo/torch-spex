@@ -1,9 +1,10 @@
 import torch
 from torch.nn import Module
 
+import metatensor.torch as mts
 from metatensor.torch import Labels, TensorBlock, TensorMap
 
-from spex import SphericalExpansion
+from .spherical_expansion import SphericalExpansion
 
 
 class SoapPowerSpectrum(Module):
@@ -41,32 +42,27 @@ class SoapPowerSpectrum(Module):
 
         self.calculator = SphericalExpansion(**self.spec)
 
-        l_to_treat = list(range(self.calculator.max_angular + 1))
-        self.n_per_l = self.calculator.radial.n_per_l
+        l_to_treat = list(range(self.calculator.calculator.max_angular + 1))
+        self.n_per_l = self.calculator.calculator.radial.n_per_l
         self.shape = sum(self.n_per_l[ell] ** 2 for ell in l_to_treat)
 
-        # Create the `properties` tensor for the output metadata
-        property_dimension: int = 0
-        for ell in l_to_treat:
-            property_dimension += self.n_per_l[ell] * self.n_per_l[ell]
-        # Pre-allocate the tensor with shape (total, 3)
-        properties = torch.empty((property_dimension, 3), dtype=torch.int32)
-        idx: int = 0
+        # # Create the `properties` tensor for the output metadata
+        # property_dimension: int = 0
+        # for ell in l_to_treat:
+        #     property_dimension += self.n_per_l[ell] * self.n_per_l[ell]
+        # # Pre-allocate the tensor with shape (total, 3)
+        # properties = torch.empty((property_dimension, 3), dtype=torch.int32)
+        # idx: int = 0
 
-        # Fill the tensor using explicit nested loops
-        for ell in l_to_treat:
-            for n1 in range(self.n_per_l[ell]):
-                for n2 in range(self.n_per_l[ell]):
-                    properties[idx, 0] = ell
-                    properties[idx, 1] = n1
-                    properties[idx, 2] = n2
-                    idx += 1
-        self.properties = Labels(["l", "n1", "n2"], properties)
-
-        species = self.calculator.species.species
-        self.register_buffer("species", species, persistent=False)
-
-        self.max_radial = next(iter(radial.values()))["max_radial"]
+        # # Fill the tensor using explicit nested loops
+        # for ell in l_to_treat:
+        #     for n1 in range(self.n_per_l[ell]):
+        #         for n2 in range(self.n_per_l[ell]):
+        #             properties[idx, 0] = ell
+        #             properties[idx, 1] = n1
+        #             properties[idx, 2] = n2
+        #             idx += 1
+        # self.properties = Labels(["l", "n1", "n2"], properties)
 
     def forward(self, R_ij, i, j, species, structures, centers):
         """Compute soap power spectrum.
@@ -113,60 +109,31 @@ class SoapPowerSpectrum(Module):
         # structures: [center]
         # centers: [center]
 
-        expansion = self.calculator.forward(R_ij, i, j, species)
-        output = [
-            torch.einsum("imnc,imNC->inNcC", e, e) for e in expansion
-        ]  # -> [[i, n1, n2, c1, c2], [...], ...]
-
-        l_to_treat = torch.arange(
-            self.calculator.max_angular + 1, dtype=i.dtype, device=i.device
+        expansion = self.calculator.forward(R_ij, i, j, species, structures, centers)
+        expansion = mts.remove_dimension(expansion, "keys", "o3_sigma").keys_to_properties(
+            "neighbor_type"
         )
-
-        self.properties = self.properties.to(device=i.device)
-
-        all_center_species = torch.unique(species).to(dtype=i.dtype)
-        all_neighbor_species = self.species
-
-        # we're trying to match the rascaline output, which has keys for
-        # l, species_center, species_neighbor ... so, we need to extract
-        # the entries for each pair of species (or pseudo-species) at each l
 
         blocks: list[TensorBlock] = []
-        data_: list[torch.Tensor] = []
-        for species_center in all_center_species:
-            center_mask = species == species_center
-            for i1 in range(len(all_neighbor_species)):
-                for i2 in range(len(all_neighbor_species)):
-                    data_ = [
-                        output[ell][center_mask][..., i1, i2].reshape(sum(center_mask), -1)
-                        for ell in l_to_treat
-                    ]
-                    data = torch.cat(data_, dim=1)
-
-                    blocks.append(
-                        TensorBlock(
-                            values=data,
-                            samples=Labels(
-                                ["system", "atom"],
-                                torch.stack(
-                                    (structures[center_mask], centers[center_mask])
-                                ).T,
-                            ),
-                            components=[],
-                            properties=self.properties,
-                        )
-                    )
-
-        # torchscript doesn't let us sanely write the keys into a list as we loop,
-        # so we just do it ourselves here. repeat_interleave for outer, repeat for inner
-        labels = Labels(
-            ["center_type", "neighbor_1_type", "neighbor_2_type"],
-            torch.cartesian_prod(
-                all_center_species, all_neighbor_species, all_neighbor_species
-            ),
-        )
-
-        return TensorMap(
-            labels,
-            blocks,
-        )
+        for b in expansion.blocks():
+            n_prop = int(b.values.shape[-1] ** 2)
+            values = torch.einsum("smn,smN->snN", b.values, b.values).reshape(
+                b.values.shape[0], n_prop
+            )
+            blocks.append(
+                TensorBlock(
+                    samples=b.samples,
+                    components=[],
+                    properties=Labels(
+                        "property",
+                        torch.arange(
+                            n_prop,
+                            dtype=torch.int32,
+                            device=expansion[0].values.device,
+                        ).unsqueeze(1),
+                    ),
+                    values=values,
+                )
+            )
+        output = TensorMap(expansion.keys, blocks).keys_to_properties(["o3_lambda"])
+        return output
