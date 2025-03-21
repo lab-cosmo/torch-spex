@@ -46,24 +46,6 @@ class SoapPowerSpectrum(Module):
         self.n_per_l = self.calculator.calculator.radial.n_per_l
         self.shape = sum(self.n_per_l[ell] ** 2 for ell in l_to_treat)
 
-        # # Create the `properties` tensor for the output metadata
-        # property_dimension: int = 0
-        # for ell in l_to_treat:
-        #     property_dimension += self.n_per_l[ell] * self.n_per_l[ell]
-        # # Pre-allocate the tensor with shape (total, 3)
-        # properties = torch.empty((property_dimension, 3), dtype=torch.int32)
-        # idx: int = 0
-
-        # # Fill the tensor using explicit nested loops
-        # for ell in l_to_treat:
-        #     for n1 in range(self.n_per_l[ell]):
-        #         for n2 in range(self.n_per_l[ell]):
-        #             properties[idx, 0] = ell
-        #             properties[idx, 1] = n1
-        #             properties[idx, 2] = n2
-        #             idx += 1
-        # self.properties = Labels(["l", "n1", "n2"], properties)
-
     def forward(self, R_ij, i, j, species, structures, centers):
         """Compute soap power spectrum.
 
