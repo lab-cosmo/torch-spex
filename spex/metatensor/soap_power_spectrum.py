@@ -44,7 +44,13 @@ class SoapPowerSpectrum(Module):
 
         l_to_treat = list(range(self.calculator.calculator.max_angular + 1))
         self.n_per_l = self.calculator.calculator.radial.n_per_l
-        self.shape = sum(self.n_per_l[ell] ** 2 for ell in l_to_treat)
+
+        n_species = (
+            species["Alchemical"]["pseudo_species"]
+            if "Alchemical" in species
+            else len(species["Orthogonal"]["species"])
+        )
+        self.shape = sum(self.n_per_l[ell] ** 2 * n_species**2 for ell in l_to_treat)
 
     def forward(self, R_ij, i, j, species, structures, centers):
         """Compute soap power spectrum.
