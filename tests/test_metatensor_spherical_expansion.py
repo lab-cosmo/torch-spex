@@ -131,7 +131,7 @@ def compare(first, second, atol=1e-11, name=None):
 def get_spex_calculator(cutoff, max_angular, max_radial, species, spliner_accuracy=1e-8):
     from spex.metatensor.spherical_expansion import SphericalExpansion
 
-    return SphericalExpansion(
+    calc = SphericalExpansion(
         cutoff=cutoff,
         max_angular=max_angular,
         radial={
@@ -145,6 +145,9 @@ def get_spex_calculator(cutoff, max_angular, max_radial, species, spliner_accura
         species={"Orthogonal": {"species": species}},
         cutoff_function={"ShiftedCosine": {"width": 0.5}},
     )
+    calc = calc.to(dtype=torch.float64)
+
+    return calc
 
 
 def get_featomic_calculator(
