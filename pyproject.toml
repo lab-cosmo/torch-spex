@@ -1,8 +1,11 @@
 [project]
-name = "spex"
-description = "a clean-slate rewrite of torch-spex"
-authors = [{name = "Marcel Langer", email = "dev@marcel.science"}]
+name = "torch-spex"
+description = "computing spherical expansions with pytorch"
+authors = [{name = "Marcel Langer", email = "dev@marcel.science"},
+           {name = "Filippo Bigi", email = "filippo.bigi@epfl.ch"},
+           {name = "Paolo Pegolo", email = "paolo.pegolo@epfl.ch"}]
 license = {text = "MIT"}
+readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "numpy",
@@ -11,6 +14,12 @@ dependencies = [
     "sphericart[torch]",
 ]
 dynamic = ["version"]
+
+[tool.flit.module]
+name = "spex"
+
+[project.urls]
+Source = "https://github.com/lab-cosmo/torch-spex"
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "ase", "physical_basis", "vesin", "featomic", "metatensor-torch"]
