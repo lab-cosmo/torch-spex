@@ -3,7 +3,8 @@ name = "torch-spex"
 description = "computing spherical expansions with pytorch"
 authors = [{name = "Marcel Langer", email = "dev@marcel.science"},
            {name = "Filippo Bigi", email = "filippo.bigi@epfl.ch"},
-           {name = "Paolo Pegolo", email = "paolo.pegolo@epfl.ch"}]
+           {name = "Paolo Pegolo", email = "paolo.pegolo@epfl.ch"},
+           {name = "Philip Loche", email = "philip.loche@epfl.ch"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.9"
