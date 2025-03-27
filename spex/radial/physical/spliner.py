@@ -81,9 +81,11 @@ class DynamicSpliner(Module):
                     f"Reached maximum number of spline points ({MAX_SPLINE_POINTS})!"
                 )
 
-        spline_values = torch.tensor(spline_values)
-        spline_derivatives = torch.tensor(spline_derivatives)
-        spline_spacing = torch.tensor(spline_spacing)
+        spline_values = torch.tensor(spline_values, dtype=torch.get_default_dtype())
+        spline_derivatives = torch.tensor(
+            spline_derivatives, dtype=torch.get_default_dtype()
+        )
+        spline_spacing = torch.tensor(spline_spacing, dtype=torch.get_default_dtype())
 
         # we add one extra interval in case we encounter r=cutoff
         spline_values = torch.concat(
