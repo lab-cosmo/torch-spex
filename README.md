@@ -1,6 +1,6 @@
 # `torch-spex`: spherical expansions of atomic neighbourhoods
 
-`torch-spex` computes spherical expansions of atomic neighbourhoods in `torch`. It provides both a ready-to-use calculator, `spex.SphericalExpansion`, as well as building blocks required to implement custom expansions. It's fully compatible with TorchScript and also has a `metatensor` calculator. As of now, outputs are precisely equivalent to `rascaline` for matching settings, while typically outperforming it by a significant margin on GPUs.
+`torch-spex` computes spherical expansions of atomic neighbourhoods in `torch`. It provides both a ready-to-use calculator, `spex.SphericalExpansion`, as well as building blocks required to implement custom expansions. It's fully compatible with TorchScript and also has a `metatensor` calculator. As of now, outputs are precisely equivalent to `featomic` for matching settings, while typically outperforming it by a significant margin on GPUs.
 
 A spherical expansion is commonly used as the input for machine learning models of molecules and materials, but can, in principle, be used for other tasks related to learning of labelled point clouds. In the language of atomistic ML, a spherical expansion computes a fixed-size representation of the arrangement of atoms $j$ in a neighbourhood around a central atom $i$, based on the vectors connecting $i$ and $j$, $\vec R_{ij}$, and the chemical species labels $Z_j$ (typically the atomic number). It works by expanding the different ingredients as follows:
 
