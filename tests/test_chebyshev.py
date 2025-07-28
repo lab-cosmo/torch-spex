@@ -16,7 +16,7 @@ class TestChebyshev(TestCase):
         self.r = np.random.random(25)
 
     def test_jit(self):
-        from spex.radial.simple import Chebyshev
+        from spex.radial import Chebyshev
 
         radial = Chebyshev(
             cutoff=self.cutoff,
@@ -31,7 +31,7 @@ class TestChebyshev(TestCase):
 
     def test_shape_and_fire(self):
         # are the shapes right? does it work?
-        from spex.radial.simple import Chebyshev
+        from spex.radial import Chebyshev
 
         radial = Chebyshev(
             cutoff=self.cutoff,
@@ -50,7 +50,7 @@ class TestChebyshev(TestCase):
         np.testing.assert_allclose(torch_output.shape, (self.r.shape[0], self.num_radial))
 
     def test_values(self):
-        from spex.radial.simple import Chebyshev
+        from spex.radial import Chebyshev
 
         radial = Chebyshev(
             cutoff=5.0,

@@ -7,10 +7,6 @@ to provide input features for ML models.
 """
 
 from .physical import LaplacianEigenstates, PhysicalBasis
-from .simple import Bernstein
+from .simple import Bernstein, Chebyshev
 
-__all__ = [
-    LaplacianEigenstates,
-    PhysicalBasis,
-    Bernstein,
-]
+__all__ = [LaplacianEigenstates, PhysicalBasis, Bernstein, Chebyshev]
