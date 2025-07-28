@@ -18,6 +18,7 @@ These expansions are based on the solutions of the Laplace equation on the spher
 These are simply expansions in some well-known function bases, with the optional ability to learn an additional linear transformation (even per degree) of the resulting features.
 
 - `Bernstein`: Bernstein polynomials
+- `Chebyshev`: Chebyshev polynomials
 - ... (more to come)
 
 ## Interface
