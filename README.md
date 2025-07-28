@@ -23,7 +23,8 @@ Species embeddings (`spex.species`):
 Radial embeddings (`spex.radial`):
 
 - `LaplacianEigenstates` and `PhysicalBasis`: Physics-inspired basis functions (splined for efficiency),
-- `Bernstein`: Bernstein polynomials.
+- `Bernstein`: Bernstein polynomials,
+- `Chebyshev`: Chebyshev polynomials.
 
 Angular embeddings (`spex.angular`):
 
