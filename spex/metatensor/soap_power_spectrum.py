@@ -1,10 +1,9 @@
 import torch
 from torch.nn import Module
 
-import metatensor.torch as mts
 from metatensor.torch import Labels, TensorBlock, TensorMap
 
-from .spherical_expansion import SphericalExpansion
+from spex.spherical_expansion import SphericalExpansion
 
 
 class SoapPowerSpectrum(Module):
@@ -42,8 +41,8 @@ class SoapPowerSpectrum(Module):
 
         self.calculator = SphericalExpansion(**self.spec)
 
-        l_to_treat = list(range(self.calculator.calculator.max_angular + 1))
-        self.n_per_l = self.calculator.calculator.radial.n_per_l
+        l_to_treat = list(range(self.calculator.max_angular + 1))
+        self.n_per_l = self.calculator.radial.n_per_l
 
         n_species = (
             species["Alchemical"]["pseudo_species"]
@@ -97,31 +96,46 @@ class SoapPowerSpectrum(Module):
         # structures: [center]
         # centers: [center]
 
-        expansion = self.calculator.forward(R_ij, i, j, species, structures, centers)
-        expansion = mts.remove_dimension(expansion, "keys", "o3_sigma").keys_to_properties(
-            "neighbor_type"
-        )
+        expansion = self.calculator.forward(R_ij, i, j, species)
+        blocks_from_single_l: list[torch.Tensor] = []
+        for tensor in expansion:
+            tensor = tensor.reshape(
+                tensor.shape[0], tensor.shape[1], tensor.shape[2] * tensor.shape[3]
+            )
+            n_prop = int(tensor.shape[-1] ** 2)
+            values = torch.einsum("smn,smN->snN", tensor, tensor).reshape(
+                tensor.shape[0], n_prop
+            )
+            blocks_from_single_l.append(values)
 
+        output_tensor = torch.concatenate(blocks_from_single_l, dim=1)
+        unique_center_species = torch.unique(species)
         blocks: list[TensorBlock] = []
-        for b in expansion.blocks():
-            n_prop = int(b.values.shape[-1] ** 2)
-            values = torch.einsum("smn,smN->snN", b.values, b.values).reshape(
-                b.values.shape[0], n_prop
+        for s in unique_center_species:
+            mask = species == s
+            output_tensor_filtered = output_tensor[mask]
+            structures_filtered = structures[mask]
+            centers_filtered = centers[mask]
+            block = TensorBlock(
+                values=output_tensor_filtered,
+                samples=Labels(
+                    names=["system", "atom"],
+                    values=torch.stack([structures_filtered, centers_filtered], dim=1),
+                ),
+                components=[],
+                properties=Labels(
+                    names=["property"],
+                    values=torch.arange(
+                        output_tensor.shape[1], device=output_tensor.device
+                    ).unsqueeze(1),
+                ),
             )
-            blocks.append(
-                TensorBlock(
-                    samples=b.samples,
-                    components=[],
-                    properties=Labels(
-                        "property",
-                        torch.arange(
-                            n_prop,
-                            dtype=torch.int32,
-                            device=expansion[0].values.device,
-                        ).unsqueeze(1),
-                    ),
-                    values=values,
-                )
-            )
-        output = TensorMap(expansion.keys, blocks).keys_to_properties(["o3_lambda"])
-        return output
+            blocks.append(block)
+        output_tensor_map = TensorMap(
+            keys=Labels(
+                names=["center_type"],
+                values=unique_center_species.unsqueeze(1),
+            ),
+            blocks=blocks,
+        )
+        return output_tensor_map
