@@ -135,3 +135,5 @@ Note that this may produce very large features. You may want to consider other, 
 We generally adhere to the [Google style guidelines](https://google.github.io/styleguide/pyguide.html). Note in particular how docstrings are formatted, and the docstrings are only encouraged for public-facing API, unless required to explain something. All docstrings and particularly comments are expected to be kept to a minimum and to be concise. Make sure you edit your LLM output accordingly.
 
 Please review the development readme in `spex/README.md` for further information.
+
+This project is [maintained](https://github.com/lab-cosmo/.github/blob/main/Maintainers.md) by [@frostedoyster](https://github.com/frostedoyster) and [@sirmarcel](https://github.com/sirmarcel), who will reply to issues and pull requests opened on this repository as soon as possible. You can mention them directly if you did not receive an answer after a couple of days.
