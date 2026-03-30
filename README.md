@@ -136,4 +136,4 @@ We generally adhere to the [Google style guidelines](https://google.github.io/st
 
 Please review the development readme in `spex/README.md` for further information.
 
-This project is [maintained](https://github.com/lab-cosmo/.github/blob/main/Maintainers.md) by @frostedoyster and @sirmarcel, who will reply to issues and pull requests opened on this repository as soon as possible. You can mention them directly if you did not receive an answer after a couple of days.
+This project is [maintained](https://github.com/lab-cosmo/.github/blob/main/Maintainers.md) by [@frostedoyster](https://github.com/frostedoyster) and [@sirmarcel](https://github.com/sirmarcel), who will reply to issues and pull requests opened on this repository as soon as possible. You can mention them directly if you did not receive an answer after a couple of days.
