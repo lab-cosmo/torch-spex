@@ -5,7 +5,8 @@ authors = [{name = "Marcel Langer", email = "dev@marcel.science"},
            {name = "Filippo Bigi", email = "filippo.bigi@epfl.ch"},
            {name = "Paolo Pegolo", email = "paolo.pegolo@epfl.ch"},
            {name = "Philip Loche", email = "philip.loche@epfl.ch"}]
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -27,7 +28,7 @@ dev = ["pytest", "ruff", "ase", "physical_basis", "vesin", "featomic", "metatens
 physical = ["physical_basis"]
 
 [build-system]
-requires = ["flit_core >=3.4,<4"]
+requires = ["flit_core >=3.11,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.ruff]
